@@ -5,7 +5,8 @@ import os
 # שליפת קובץ נתונים
 @st.cache_data
 def load_data():
-    path = "players_simplified_2025.csv"
+    import os
+    path = os.path.join("ysp75-app", "players_simplified_2025.csv")
     return pd.read_csv(path)
 
 df = load_data()
