@@ -5,7 +5,6 @@ import os
 # שליפת קובץ נתונים
 @st.cache_data
 def load_data():
-    import os
     path = os.path.join("ysp75-app", "players_simplified_2025.csv")
     return pd.read_csv(path)
 
@@ -78,7 +77,9 @@ if player_input:
             if any(league_name in league for league_name in top_leagues):
                 score *= 1.2
 
-            score = round(score, 2)
+            # ✔ מגבלת תקרת ניקוד
+            score = min(round(score, 2), 100)
+
             st.metric("מדד YSP-75", score)
 
             # תיאור
