@@ -1,77 +1,70 @@
 import streamlit as st
 import pandas as pd
-
-# נתיב לקובץ הנתונים
-DATA_PATH = "players_simplified_2025.csv"
-
-# דירוג הליגות - ציון איכות לליגה (ככל שגבוה יותר, כך טוב יותר)
-LEAGUE_SCORES = {
-    'Premier League': 1.0,
-    'La Liga': 0.95,
-    'Serie A': 0.9,
-    'Bundesliga': 0.9,
-    'Ligue 1': 0.85
-}
-
-# טען את הנתונים עם בדיקת תקינות
+df = pd.read_csv("players_simplified_2025.csv")
+print(df.head())
+# טוען את הקובץ
 @st.cache_data
 def load_data():
-    try:
-        df = pd.read_csv(DATA_PATH)
-        return df.dropna(subset=["Player", "Age", "Min", "Gls", "Ast"])
-    except Exception as e:
-        st.error(f"\u274c שגיאה בטעינת הקובץ: {e}")
-        st.stop()
+    return pd.read_csv("players_simplified_2025.csv")
 
-# פונקציית חישוב מדד YSP-75
-def calculate_ysp(row):
-    try:
-        age = float(row["Age"])
-        minutes = float(row["Min"])
-        goals = float(row["Gls"])
-        assists = float(row["Ast"])
-        league = row["Comp"]
+df = load_data()
 
-        league_score = LEAGUE_SCORES.get(league, 0.7)
-        offensive_contrib = (goals * 0.6 + assists * 0.4)
-        minutes_factor = min(minutes / 1000, 1.0)
-        age_factor = max(0, 1 - (age - 18) / 10)
-
-        score = 100 * offensive_contrib * minutes_factor * age_factor * league_score
-        return round(score, 2)
-    except:
-        return 0
-
-# כותרת האפליקציה
-st.title("🎯 YSP-75 – מדד סיכויי הצלחה לשחקן צעיר")
-st.markdown("""
-מדד YSP-75 מעריך את הפוטנציאל של שחקנים צעירים על סמך:
-**גיל, ליגה, דקות משחק, גולים ובישולים.**
-
-- ציון מעל **75**: טופ אירופי.
-- ציון **65-75**: כישרון עולמי.
-- ציון **55-65**: כישרון שצריך שיפור.
-""")
-
-# טען את הנתונים
-players_df = load_data()
+st.title("FstarVfootball – מדד סיכויי הצלחה לשחקנים צעירים (YSP-75)")
 
 # קלט שם שחקן
-name = st.text_input("הזן שם שחקן (באנגלית):")
+player_name = st.text_input("הכנס שם שחקן:").strip().lower()
 
-if name:
-    filtered = players_df[players_df['Player'].str.lower().str.contains(name.lower())]
-    if filtered.empty:
-        st.warning("\u26a0\ufe0f שחקן לא נמצא בקובץ")
+if player_name:
+    # סינון לפי שם
+    results = df[df['name'].str.lower().str.contains(player_name)]
+
+    if not results.empty:
+        for idx, row in results.iterrows():
+            st.subheader(f"שחקן: {row['name']}")
+            st.write(f"ליגה: {row['league']}")
+            st.write(f"גיל: {row['age']}")
+            st.write(f"דקות משחק: {row['minutes']}")
+            st.write(f"גולים: {row['goals']}")
+            st.write(f"בישולים: {row['assists']}")
+            st.write(f"מאבקים: {row['duels_won']} / {row['duels_total']}")
+            st.write(f"דריבלים מוצלחים: {row['dribbles_successful']}")
+            st.write(f"מסירות מפתח: {row['key_passes']}")
+            st.write("---")
+
+            # חישוב מדד
+            score = (
+                row['goals'] * 4 +
+                row['assists'] * 3 +
+                row['dribbles_successful'] * 1.5 +
+                row['key_passes'] * 1.5 +
+                (row['duels_won'] / max(row['duels_total'], 1)) * 5 +
+                row['minutes'] / 300
+            )
+
+            # התאמת משקל לפי גיל וליגה
+            if row['age'] <= 20:
+                score *= 1.1
+            elif row['age'] <= 23:
+                score *= 1.05
+
+            # בונוס לליגות הבכירות
+            top_leagues = ["Premier League", "La Liga", "Serie A", "Bundesliga", "Ligue 1"]
+            if row['league'] in top_leagues:
+                score *= 1.2
+
+            st.metric("מדד YSP-75", round(score, 2))
+
+            # תיאור מילולי
+            if score >= 75:
+                st.success("טופ אירופי – שחקן ברמת עילית, כדאי לעקוב ברצינות.")
+            elif score >= 65:
+                st.info("כישרון ברמה עולמית – שווה מעקב והתפתחות.")
+            elif score >= 55:
+                st.warning("כישרון עם פוטנציאל – נדרש יציבות והתקדמות.")
+            else:
+                st.write("שחקן שצריך עוד זמן ומעקב לפני מסקנות.")
+
     else:
-        for _, row in filtered.iterrows():
-            score = calculate_ysp(row)
-            st.subheader(row['Player'])
-            st.write(f"**ליגה:** {row['Comp']}")
-            st.write(f"**גיל:** {row['Age']} | **דקות:** {row['Min']:.0f}")
-            st.write(f"**שערים:** {row['Gls']} | **בישולים:** {row['Ast']}")
-            st.metric("YSP-75 Score", score)
+        st.error("שחקן לא נמצא. נסה שם אחר.")
 
-# קרדיט מקור הנתונים
-st.markdown("---")
-st.markdown("נתוני שחקנים נלקחו מהטבלה שהוזנה על ידי המשתמש לצורכי הדגמה בלבד.")
+st.caption("הנתונים נלקחו מ־Kaggle ומעובדים לצורכי הערכה חינוכית בלבד.")
