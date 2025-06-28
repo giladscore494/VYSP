@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
-df = pd.read_csv("players_simplified_2025.csv")
-print(df.head())
+
 # טוען את הקובץ
 @st.cache_data
 def load_data():
