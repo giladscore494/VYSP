@@ -14,9 +14,19 @@ df = load_data()
 
 # ערכי ייחוס לעמדות
 benchmarks = {
+    "GK": {"Min": 3000, "Clr": 30, "Tkl": 10, "Blocks": 15},
     "DF": {"Tkl": 50, "Int": 50, "Clr": 120, "Blocks": 30, "Min": 3000, "Gls": 3, "Ast": 2},
     "MF": {"Gls": 10, "Ast": 10, "Succ": 50, "KP": 50, "Min": 3000},
     "FW": {"Gls": 20, "Ast": 15, "Succ": 40, "KP": 40, "Min": 3000}
+}
+
+# דירוג איכות ליגות (משפיע על משקל ציונים)
+league_weights = {
+    "eng Premier League": 1.00,
+    "es La Liga": 0.98,
+    "de Bundesliga": 0.96,
+    "it Serie A": 0.95,
+    "fr Ligue 1": 0.93
 }
 
 st.title("FstarVfootball – מדד סיכויי הצלחה לשחקנים צעירים (YSP-75)")
@@ -54,7 +64,15 @@ if player_input:
 
             score = 0
 
-            if "DF" in position:
+            if "GK" in position:
+                bm = benchmarks["GK"]
+                score = (
+                    (minutes / bm["Min"]) * 40 +
+                    (clearances / bm["Clr"]) * 20 +
+                    (tackles / bm["Tkl"]) * 20 +
+                    (blocks / bm["Blocks"]) * 20
+                )
+            elif "DF" in position:
                 bm = benchmarks["DF"]
                 score = (
                     (tackles / bm["Tkl"]) * 20 +
@@ -86,16 +104,15 @@ if player_input:
             else:
                 score = (goals * 3 + assists * 2 + minutes / 250)
 
-            # התאמות גיל
+            # התאמות לגיל
             if age <= 20:
                 score *= 1.1
             elif age <= 23:
                 score *= 1.05
 
-            # בונוס לליגות בכירות
-            top_leagues = ["Premier League", "La Liga", "Serie A", "Bundesliga", "Ligue 1"]
-            if any(lg in league for lg in top_leagues):
-                score *= 1.2
+            # התאמה לפי איכות הליגה
+            league_weight = league_weights.get(league.strip(), 0.9)
+            score *= league_weight
 
             score = min(round(score, 2), 100)
 
