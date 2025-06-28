@@ -1,10 +1,10 @@
 import streamlit as st
 import pandas as pd
 
-# טוען את הקובץ מהתיקייה
+# טוען את הקובץ מהתיקייה הנוכחית
 @st.cache_data
 def load_data():
-    return pd.read_csv("ysp75-app/players_simplified_2025.csv")
+    return pd.read_csv("players_simplified_2025.csv")
 
 df = load_data()
 
@@ -25,18 +25,14 @@ if player_name:
             st.write(f"דקות משחק: {row['minutes']}")
             st.write(f"גולים: {row['goals']}")
             st.write(f"בישולים: {row['assists']}")
-            st.write(f"מאבקים: {row['duels_won']} / {row['duels_total']}")
-            st.write(f"דריבלים מוצלחים: {row['dribbles_successful']}")
-            st.write(f"מסירות מפתח: {row['key_passes']}")
             st.write("---")
 
-            # חישוב מדד
+            # חישוב מדד ללא מאבקים
             score = (
                 row['goals'] * 4 +
                 row['assists'] * 3 +
-                row['dribbles_successful'] * 1.5 +
-                row['key_passes'] * 1.5 +
-                (row['duels_won'] / max(row['duels_total'], 1)) * 5 +
+                row.get('dribbles_successful', 0) * 1.5 +
+                row.get('key_passes', 0) * 1.5 +
                 row['minutes'] / 300
             )
 
@@ -46,12 +42,14 @@ if player_name:
             elif row['age'] <= 23:
                 score *= 1.05
 
+            # בונוס לליגות הבכירות
             top_leagues = ["Premier League", "La Liga", "Serie A", "Bundesliga", "Ligue 1"]
             if row['league'] in top_leagues:
                 score *= 1.2
 
             st.metric("מדד YSP-75", round(score, 2))
 
+            # תיאור מילולי
             if score >= 75:
                 st.success("טופ אירופי – שחקן ברמת עילית, כדאי לעקוב ברצינות.")
             elif score >= 65:
@@ -60,6 +58,7 @@ if player_name:
                 st.warning("כישרון עם פוטנציאל – נדרש יציבות והתקדמות.")
             else:
                 st.write("שחקן שצריך עוד זמן ומעקב לפני מסקנות.")
+
     else:
         st.error("שחקן לא נמצא. נסה שם אחר.")
 
