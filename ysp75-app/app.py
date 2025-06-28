@@ -1,10 +1,12 @@
 import streamlit as st
 import pandas as pd
+import os
 
-# טוען את הקובץ מהתיקייה הנוכחית
+# טוען את הקובץ מהתיקייה ysp75-app
 @st.cache_data
 def load_data():
-    return pd.read_csv("players_simplified_2025.csv")
+    path = os.path.join("ysp75-app", "players_simplified_2025.csv")
+    return pd.read_csv(path)
 
 df = load_data()
 
@@ -14,7 +16,6 @@ st.title("FstarVfootball – מדד סיכויי הצלחה לשחקנים צע�
 player_name = st.text_input("הכנס שם שחקן:").strip().lower()
 
 if player_name:
-    # סינון לפי שם
     results = df[df['name'].str.lower().str.contains(player_name)]
 
     if not results.empty:
@@ -25,9 +26,11 @@ if player_name:
             st.write(f"דקות משחק: {row['minutes']}")
             st.write(f"גולים: {row['goals']}")
             st.write(f"בישולים: {row['assists']}")
+            st.write(f"דריבלים מוצלחים: {row.get('dribbles_successful', 0)}")
+            st.write(f"מסירות מפתח: {row.get('key_passes', 0)}")
             st.write("---")
 
-            # חישוב מדד ללא מאבקים
+            # חישוב מדד YSP-75
             score = (
                 row['goals'] * 4 +
                 row['assists'] * 3 +
@@ -36,7 +39,7 @@ if player_name:
                 row['minutes'] / 300
             )
 
-            # התאמת משקל לפי גיל וליגה
+            # התאמת משקל לפי גיל
             if row['age'] <= 20:
                 score *= 1.1
             elif row['age'] <= 23:
@@ -49,7 +52,6 @@ if player_name:
 
             st.metric("מדד YSP-75", round(score, 2))
 
-            # תיאור מילולי
             if score >= 75:
                 st.success("טופ אירופי – שחקן ברמת עילית, כדאי לעקוב ברצינות.")
             elif score >= 65:
@@ -58,7 +60,6 @@ if player_name:
                 st.warning("כישרון עם פוטנציאל – נדרש יציבות והתקדמות.")
             else:
                 st.write("שחקן שצריך עוד זמן ומעקב לפני מסקנות.")
-
     else:
         st.error("שחקן לא נמצא. נסה שם אחר.")
 
