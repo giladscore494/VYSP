@@ -1,7 +1,8 @@
 import streamlit as st
 import pandas as pd
+import os
 
-# טוען את הקובץ
+# טוען את הנתונים
 @st.cache_data
 def load_data():
     path = os.path.join("ysp75-app", "players_simplified_2025.csv")
@@ -15,7 +16,6 @@ st.title("FstarVfootball – מדד סיכויי הצלחה לשחקנים צע�
 player_name = st.text_input("הכנס שם שחקן:").strip().lower()
 
 if player_name:
-    # סינון לפי שם
     results = df[df['name'].str.lower().str.contains(player_name)]
 
     if not results.empty:
@@ -26,47 +26,45 @@ if player_name:
             st.write(f"דקות משחק: {row['minutes']}")
             st.write(f"גולים: {row['goals']}")
             st.write(f"בישולים: {row['assists']}")
-            st.write(f"דריבלים מוצלחים: {row.get('dribbles_successful', 0)}")
-            st.write(f"מסירות מפתח: {row.get('key_passes', 0)}")
+            st.write(f"דריבלים מוצלחים: {row['dribbles_successful']}")
+            st.write(f"מסירות מפתח: {row['key_passes']}")
             st.write("---")
 
             # חישוב מדד
             score = (
                 row['goals'] * 4 +
                 row['assists'] * 3 +
-                row.get('dribbles_successful', 0) * 1.5 +
-                row.get('key_passes', 0) * 1.5 +
+                row['dribbles_successful'] * 1.5 +
+                row['key_passes'] * 1.5 +
                 row['minutes'] / 300
             )
 
-            # התאמת משקל לפי גיל
+            # בונוס לגיל צעיר
             if row['age'] <= 20:
                 score *= 1.1
             elif row['age'] <= 23:
                 score *= 1.05
 
-            # בונוס לליגות הבכירות
+            # בונוס לליגות הטובות
             top_leagues = ["Premier League", "La Liga", "Serie A", "Bundesliga", "Ligue 1"]
             if row['league'] in top_leagues:
                 score *= 1.2
 
-            # הגבלת תקרה
-            score = min(score, 100)
+            # מינימום 65 אם יש 5 גולים ו־5 בישולים
+            if row['goals'] >= 5 and row['assists'] >= 5 and score < 65:
+                score = 65
 
             st.metric("מדד YSP-75", round(score, 2))
 
-            # תיאור מילולי עם הבחנה לגיל
-            if row['age'] > 26:
-                st.success("שחקן מוכח בטופ האירופי – כבר בשיאו.")
+            # פירוש תוצאה
+            if score >= 85:
+                st.success("טופ אירופי – שחקן מוכח ברמת עילית.")
+            elif score >= 75:
+                st.info("כישרון בקנה מידה אירופאי – ביצועים מצוינים.")
+            elif score >= 65:
+                st.warning("ביצועים מעודדים – שווה מעקב.")
             else:
-                if score >= 75:
-                    st.success("טופ אירופי – שחקן ברמת עילית, כדאי לעקוב ברצינות.")
-                elif score >= 65:
-                    st.info("כישרון ברמה עולמית – שווה מעקב והתפתחות.")
-                elif score >= 55:
-                    st.warning("כישרון עם פוטנציאל – נדרש יציבות והתקדמות.")
-                else:
-                    st.write("שחקן שצריך עוד זמן ומעקב לפני מסקנות.")
+                st.write("דורש מעקב נוסף והבשלה.")
 
     else:
         st.error("שחקן לא נמצא. נסה שם אחר.")
