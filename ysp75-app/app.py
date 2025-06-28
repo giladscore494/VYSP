@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import os
 
-# טוען את הנתונים
 @st.cache_data
 def load_data():
     path = os.path.join("ysp75-app", "players_simplified_2025.csv")
@@ -12,7 +11,6 @@ df = load_data()
 
 st.title("FstarVfootball – מדד סיכויי הצלחה לשחקנים צעירים (YSP-75)")
 
-# קלט שם שחקן
 player_name = st.text_input("הכנס שם שחקן:").strip().lower()
 
 if player_name:
@@ -26,37 +24,36 @@ if player_name:
             st.write(f"דקות משחק: {row['minutes']}")
             st.write(f"גולים: {row['goals']}")
             st.write(f"בישולים: {row['assists']}")
-            st.write(f"דריבלים מוצלחים: {row['dribbles_successful']}")
-            st.write(f"מסירות מפתח: {row['key_passes']}")
+            
+            dribbles = row['dribbles_successful'] if 'dribbles_successful' in row else 0
+            key_passes = row['key_passes'] if 'key_passes' in row else 0
+
+            st.write(f"דריבלים מוצלחים: {dribbles}")
+            st.write(f"מסירות מפתח: {key_passes}")
             st.write("---")
 
-            # חישוב מדד
             score = (
                 row['goals'] * 4 +
                 row['assists'] * 3 +
-                row['dribbles_successful'] * 1.5 +
-                row['key_passes'] * 1.5 +
+                dribbles * 1.5 +
+                key_passes * 1.5 +
                 row['minutes'] / 300
             )
 
-            # בונוס לגיל צעיר
             if row['age'] <= 20:
                 score *= 1.1
             elif row['age'] <= 23:
                 score *= 1.05
 
-            # בונוס לליגות הטובות
             top_leagues = ["Premier League", "La Liga", "Serie A", "Bundesliga", "Ligue 1"]
             if row['league'] in top_leagues:
                 score *= 1.2
 
-            # מינימום 65 אם יש 5 גולים ו־5 בישולים
             if row['goals'] >= 5 and row['assists'] >= 5 and score < 65:
                 score = 65
 
             st.metric("מדד YSP-75", round(score, 2))
 
-            # פירוש תוצאה
             if score >= 85:
                 st.success("טופ אירופי – שחקן מוכח ברמת עילית.")
             elif score >= 75:
@@ -65,7 +62,6 @@ if player_name:
                 st.warning("ביצועים מעודדים – שווה מעקב.")
             else:
                 st.write("דורש מעקב נוסף והבשלה.")
-
     else:
         st.error("שחקן לא נמצא. נסה שם אחר.")
 
