@@ -4,7 +4,8 @@ import pandas as pd
 # טוען את הקובץ
 @st.cache_data
 def load_data():
-    return pd.read_csv("players_simplified_2025.csv")
+    path = os.path.join("ysp75-app", "players_simplified_2025.csv")
+    return pd.read_csv(path)
 
 df = load_data()
 
