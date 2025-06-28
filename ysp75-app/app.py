@@ -7,14 +7,20 @@ import os
 def load_data():
     path = os.path.join("ysp75-app", "players_simplified_2025.csv")
     df = pd.read_csv(path)
-    df.columns = df.columns.str.strip()  # הסרת רווחים מהשמות
+    df.columns = df.columns.str.strip()
     return df
 
 df = load_data()
 
+# ערכי ייחוס לעמדות
+benchmarks = {
+    "DF": {"Tkl": 50, "Int": 50, "Clr": 120, "Blocks": 30, "Min": 3000, "Gls": 3, "Ast": 2},
+    "MF": {"Gls": 10, "Ast": 10, "Succ": 50, "KP": 50, "Min": 3000},
+    "FW": {"Gls": 20, "Ast": 15, "Succ": 40, "KP": 40, "Min": 3000}
+}
+
 st.title("FstarVfootball – מדד סיכויי הצלחה לשחקנים צעירים (YSP-75)")
 
-# קלט שם
 player_input = st.text_input("הכנס שם שחקן (פרטי או משפחה):").strip().lower()
 
 if player_input:
@@ -46,29 +52,41 @@ if player_input:
             st.write(f"דריבלים מוצלחים: {dribbles}")
             st.write(f"מסירות מפתח: {key_passes}")
 
-            # חישוב מדד לפי עמדה
             score = 0
-            if "GK" in position:
-                score = (minutes / 90) + blocks * 2 + clearances + tackles
-            elif "DF" in position:
+
+            if "DF" in position:
+                bm = benchmarks["DF"]
                 score = (
-                    tackles * 1.5 + interceptions * 1.5 + clearances * 1.2 +
-                    blocks * 1.2 + minutes / 300 + goals * 2 + assists * 1.5
+                    (tackles / bm["Tkl"]) * 20 +
+                    (interceptions / bm["Int"]) * 20 +
+                    (clearances / bm["Clr"]) * 20 +
+                    (blocks / bm["Blocks"]) * 10 +
+                    (minutes / bm["Min"]) * 10 +
+                    (goals / bm["Gls"]) * 10 +
+                    (assists / bm["Ast"]) * 10
                 )
             elif "MF" in position:
+                bm = benchmarks["MF"]
                 score = (
-                    goals * 3 + assists * 3 + dribbles * 1.5 + key_passes * 1.5 +
-                    minutes / 250
+                    (goals / bm["Gls"]) * 20 +
+                    (assists / bm["Ast"]) * 20 +
+                    (dribbles / bm["Succ"]) * 20 +
+                    (key_passes / bm["KP"]) * 20 +
+                    (minutes / bm["Min"]) * 20
                 )
             elif "FW" in position:
+                bm = benchmarks["FW"]
                 score = (
-                    goals * 4 + assists * 3 + dribbles * 1.2 + key_passes * 1.2 +
-                    minutes / 200
+                    (goals / bm["Gls"]) * 30 +
+                    (assists / bm["Ast"]) * 25 +
+                    (dribbles / bm["Succ"]) * 15 +
+                    (key_passes / bm["KP"]) * 15 +
+                    (minutes / bm["Min"]) * 15
                 )
             else:
                 score = (goals * 3 + assists * 2 + minutes / 250)
 
-            # התאמות לגיל
+            # התאמות גיל
             if age <= 20:
                 score *= 1.1
             elif age <= 23:
@@ -76,15 +94,13 @@ if player_input:
 
             # בונוס לליגות בכירות
             top_leagues = ["Premier League", "La Liga", "Serie A", "Bundesliga", "Ligue 1"]
-            if any(league_name in league for league_name in top_leagues):
+            if any(lg in league for lg in top_leagues):
                 score *= 1.2
 
-            # הגבלת מדד ל-100
             score = min(round(score, 2), 100)
 
             st.metric("מדד YSP-75", score)
 
-            # תיאור
             if age > 26 and score >= 85:
                 st.success("טופ אירופי בהווה – שחקן מוכח ברמה גבוהה.")
             elif score >= 85:
