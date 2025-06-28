@@ -1,10 +1,10 @@
 import streamlit as st
 import pandas as pd
 
-# טוען את הקובץ
+# טוען את הקובץ מהתיקייה
 @st.cache_data
 def load_data():
-    return pd.read_csv("players_simplified_2025.csv")
+    return pd.read_csv("ysp75-app/players_simplified_2025.csv")
 
 df = load_data()
 
@@ -46,14 +46,12 @@ if player_name:
             elif row['age'] <= 23:
                 score *= 1.05
 
-            # בונוס לליגות הבכירות
             top_leagues = ["Premier League", "La Liga", "Serie A", "Bundesliga", "Ligue 1"]
             if row['league'] in top_leagues:
                 score *= 1.2
 
             st.metric("מדד YSP-75", round(score, 2))
 
-            # תיאור מילולי
             if score >= 75:
                 st.success("טופ אירופי – שחקן ברמת עילית, כדאי לעקוב ברצינות.")
             elif score >= 65:
@@ -62,7 +60,6 @@ if player_name:
                 st.warning("כישרון עם פוטנציאל – נדרש יציבות והתקדמות.")
             else:
                 st.write("שחקן שצריך עוד זמן ומעקב לפני מסקנות.")
-
     else:
         st.error("שחקן לא נמצא. נסה שם אחר.")
 
