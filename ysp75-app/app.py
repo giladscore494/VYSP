@@ -1,12 +1,10 @@
 import streamlit as st
 import pandas as pd
-import os
 
-# טוען את הקובץ מהתיקייה ysp75-app
+# טוען את הקובץ
 @st.cache_data
 def load_data():
-    path = os.path.join("ysp75-app", "players_simplified_2025.csv")
-    return pd.read_csv(path)
+    return pd.read_csv("players_simplified_2025.csv")
 
 df = load_data()
 
@@ -16,6 +14,7 @@ st.title("FstarVfootball – מדד סיכויי הצלחה לשחקנים צע�
 player_name = st.text_input("הכנס שם שחקן:").strip().lower()
 
 if player_name:
+    # סינון לפי שם
     results = df[df['name'].str.lower().str.contains(player_name)]
 
     if not results.empty:
@@ -30,7 +29,7 @@ if player_name:
             st.write(f"מסירות מפתח: {row.get('key_passes', 0)}")
             st.write("---")
 
-            # חישוב מדד YSP-75
+            # חישוב מדד
             score = (
                 row['goals'] * 4 +
                 row['assists'] * 3 +
@@ -50,16 +49,24 @@ if player_name:
             if row['league'] in top_leagues:
                 score *= 1.2
 
+            # הגבלת תקרה
+            score = min(score, 100)
+
             st.metric("מדד YSP-75", round(score, 2))
 
-            if score >= 75:
-                st.success("טופ אירופי – שחקן ברמת עילית, כדאי לעקוב ברצינות.")
-            elif score >= 65:
-                st.info("כישרון ברמה עולמית – שווה מעקב והתפתחות.")
-            elif score >= 55:
-                st.warning("כישרון עם פוטנציאל – נדרש יציבות והתקדמות.")
+            # תיאור מילולי עם הבחנה לגיל
+            if row['age'] > 26:
+                st.success("שחקן מוכח בטופ האירופי – כבר בשיאו.")
             else:
-                st.write("שחקן שצריך עוד זמן ומעקב לפני מסקנות.")
+                if score >= 75:
+                    st.success("טופ אירופי – שחקן ברמת עילית, כדאי לעקוב ברצינות.")
+                elif score >= 65:
+                    st.info("כישרון ברמה עולמית – שווה מעקב והתפתחות.")
+                elif score >= 55:
+                    st.warning("כישרון עם פוטנציאל – נדרש יציבות והתקדמות.")
+                else:
+                    st.write("שחקן שצריך עוד זמן ומעקב לפני מסקנות.")
+
     else:
         st.error("שחקן לא נמצא. נסה שם אחר.")
 
