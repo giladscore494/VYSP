@@ -12,12 +12,19 @@ def load_data():
 
 df = load_data()
 
-# ערכי ייחוס לעמדות
+# ערכי בנצ'מרק וניקוד לכל מדד לפי עמדה
 benchmarks = {
-    "GK": {"Min": 3000, "Clr": 30, "Tkl": 10, "Blocks": 15},
-    "DF": {"Tkl": 50, "Int": 50, "Clr": 120, "Blocks": 30, "Min": 3000, "Gls": 3, "Ast": 2},
-    "MF": {"Gls": 10, "Ast": 10, "Succ": 50, "KP": 50, "Min": 3000},
-    "FW": {"Gls": 20, "Ast": 15, "Succ": 40, "KP": 40, "Min": 3000}
+    "GK": {"Min": 3000, "Clr": 30, "Tkl": 10, "Blocks": 15, "Gls": 1, "Ast": 1, "Succ": 5, "KP": 2, "Int": 5},
+    "DF": {"Tkl": 50, "Int": 50, "Clr": 120, "Blocks": 30, "Min": 3000, "Gls": 3, "Ast": 2, "Succ": 10, "KP": 5},
+    "MF": {"Gls": 10, "Ast": 10, "Succ": 50, "KP": 50, "Min": 3000, "Tkl": 20, "Int": 20, "Clr": 10},
+    "FW": {"Gls": 20, "Ast": 15, "Succ": 40, "KP": 40, "Min": 3000, "Tkl": 5, "Blocks": 5}
+}
+
+weights = {
+    "GK": {"Min": 25, "Clr": 20, "Tkl": 15, "Blocks": 15, "Gls": 5, "Ast": 5, "Succ": 5, "KP": 5, "Int": 5},
+    "DF": {"Tkl": 20, "Int": 15, "Clr": 15, "Blocks": 10, "Min": 10, "Gls": 10, "Ast": 10, "Succ": 5, "KP": 5},
+    "MF": {"Gls": 15, "Ast": 15, "Succ": 15, "KP": 15, "Min": 15, "Tkl": 10, "Int": 10, "Clr": 5},
+    "FW": {"Gls": 30, "Ast": 20, "Succ": 15, "KP": 10, "Min": 10, "Tkl": 5, "Blocks": 5}
 }
 
 # דירוג איכות ליגות (משפיע על משקל ציונים)
@@ -62,49 +69,29 @@ if player_input:
             st.write(f"דריבלים מוצלחים: {dribbles}")
             st.write(f"מסירות מפתח: {key_passes}")
 
+            # קביעת סוג עמדה
+            role = "FW"  # ברירת מחדל
+            for r in ["GK", "DF", "MF", "FW"]:
+                if r in position:
+                    role = r
+                    break
+
+            bm = benchmarks[role]
+            w = weights[role]
+
+            # חישוב מדד YSP
             score = 0
+            score += (minutes / bm.get("Min", 1)) * w.get("Min", 0)
+            score += (goals / bm.get("Gls", 1)) * w.get("Gls", 0)
+            score += (assists / bm.get("Ast", 1)) * w.get("Ast", 0)
+            score += (dribbles / bm.get("Succ", 1)) * w.get("Succ", 0)
+            score += (key_passes / bm.get("KP", 1)) * w.get("KP", 0)
+            score += (tackles / bm.get("Tkl", 1)) * w.get("Tkl", 0)
+            score += (interceptions / bm.get("Int", 1)) * w.get("Int", 0)
+            score += (clearances / bm.get("Clr", 1)) * w.get("Clr", 0)
+            score += (blocks / bm.get("Blocks", 1)) * w.get("Blocks", 0)
 
-            if "GK" in position:
-                bm = benchmarks["GK"]
-                score = (
-                    (minutes / bm["Min"]) * 40 +
-                    (clearances / bm["Clr"]) * 20 +
-                    (tackles / bm["Tkl"]) * 20 +
-                    (blocks / bm["Blocks"]) * 20
-                )
-            elif "DF" in position:
-                bm = benchmarks["DF"]
-                score = (
-                    (tackles / bm["Tkl"]) * 20 +
-                    (interceptions / bm["Int"]) * 20 +
-                    (clearances / bm["Clr"]) * 20 +
-                    (blocks / bm["Blocks"]) * 10 +
-                    (minutes / bm["Min"]) * 10 +
-                    (goals / bm["Gls"]) * 10 +
-                    (assists / bm["Ast"]) * 10
-                )
-            elif "MF" in position:
-                bm = benchmarks["MF"]
-                score = (
-                    (goals / bm["Gls"]) * 20 +
-                    (assists / bm["Ast"]) * 20 +
-                    (dribbles / bm["Succ"]) * 20 +
-                    (key_passes / bm["KP"]) * 20 +
-                    (minutes / bm["Min"]) * 20
-                )
-            elif "FW" in position:
-                bm = benchmarks["FW"]
-                score = (
-                    (goals / bm["Gls"]) * 30 +
-                    (assists / bm["Ast"]) * 25 +
-                    (dribbles / bm["Succ"]) * 15 +
-                    (key_passes / bm["KP"]) * 15 +
-                    (minutes / bm["Min"]) * 15
-                )
-            else:
-                score = (goals * 3 + assists * 2 + minutes / 250)
-
-            # התאמות לגיל
+            # התאמות גיל
             if age <= 20:
                 score *= 1.1
             elif age <= 23:
@@ -134,3 +121,4 @@ if player_input:
         st.error("שחקן לא נמצא. נסה שם מדויק או חלק ממנו.")
 
 st.caption("הנתונים נלקחו מ־Kaggle ומעובדים לצורכי הערכה חינוכית בלבד.")
+
