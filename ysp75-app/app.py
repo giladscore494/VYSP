@@ -10,7 +10,15 @@ def load_data():
     df.columns = df.columns.str.strip()
     return df
 
+@st.cache_data
+def load_club_data():
+    path = os.path.join("ysp75-app", "Updated_Club_Tactical_Dataset.csv")
+    df = pd.read_csv(path)
+    df.columns = df.columns.str.strip()
+    return df
+
 df = load_data()
+clubs_df = load_club_data()
 
 # ערכי ייחוס לעמדות
 benchmarks = {
@@ -20,7 +28,7 @@ benchmarks = {
     "FW": {"Gls": 20, "Ast": 15, "Succ": 40, "KP": 40, "Min": 3000}
 }
 
-# דירוג איכות ליגות (משפיע על משקל ציונים)
+# דירוג איכות ליגות
 league_weights = {
     "eng Premier League": 1.00,
     "es La Liga": 0.98,
@@ -64,7 +72,6 @@ if player_input:
 
             score = 0
 
-            # חישוב לפי עמדה
             if "GK" in position:
                 bm = benchmarks["GK"]
                 score = (
@@ -105,7 +112,6 @@ if player_input:
             else:
                 score = (goals * 3 + assists * 2 + minutes / 250)
 
-            # חישוב תרומה פר 90 דקות
             if minutes > 0:
                 contribution_per_90 = ((goals + assists + dribbles * 0.5 + key_passes * 0.5) / minutes) * 90
                 if contribution_per_90 >= 1.2:
@@ -115,33 +121,41 @@ if player_input:
                 elif contribution_per_90 >= 0.6:
                     score += 5
 
-            # התאמות גיל
             if age <= 20:
                 score *= 1.1
             elif age <= 23:
                 score *= 1.05
 
-            # התאמה לפי איכות הליגה
             league_weight = league_weights.get(league.strip(), 0.9)
             score *= league_weight
-
             score = min(round(score, 2), 100)
 
             st.metric("מדד YSP-75", score)
 
-            if age > 26 and score >= 85:
-                st.success("טופ אירופי בהווה – שחקן מוכח ברמה גבוהה.")
-            elif score >= 85:
-                st.success("טופ אירופי – שחקן ברמת עילית, כדאי לעקוב ברצינות.")
-            elif score >= 75:
-                st.info("כישרון בקנה מידה עולמי – שווה מעקב.")
-            elif score >= 65 or (goals >= 5 and assists >= 5):
-                st.warning("פוטנציאל אירופי – דרושה יציבות נוספת.")
-            else:
-                st.write("דורש מעקב נוסף והבשלה.")
+            # מדד התאמה לקבוצה
+            club_input = st.text_input("הזן קבוצה לבדיקה (לדוגמה: Paris Saint-Germain):")
+            if club_input:
+                club_data = clubs_df[clubs_df["Club"].str.lower() == club_input.lower()]
+                if not club_data.empty:
+                    club_row = club_data.iloc[0]
+                    fit_score = 100
+
+                    if "Attacking" in club_row["Playing Style"] and "FW" in position:
+                        fit_score += 5
+                    if "Balanced" in club_row["Playing Style"] and "MF" in position:
+                        fit_score += 3
+                    if "High" in club_row["Defensive Line Depth"] and "DF" in position:
+                        fit_score += 5
+                    if "High Press" in club_row["Pressing Style"] and "FW" in position:
+                        fit_score += 3
+
+                    fit_score = min(fit_score, 100)
+                    st.metric("מדד התאמה לקבוצה", f"{fit_score}%")
+                else:
+                    st.warning("שם קבוצה לא נמצא במאגר.")
 
             st.write("---")
     else:
         st.error("שחקן לא נמצא. נסה שם מדויק או חלק ממנו.")
 
-st.caption("הנתונים נלקחו מ־Kaggle ומעובדים לצורכי הערכה חינוכית בלבד.")
+st.caption("הנתונים נלקחו ממקורות חופשיים ונותחו בעזרת אלגוריתם. המידע אינו רשמי ומשמש להערכה בלבד.")
