@@ -20,7 +20,6 @@ def match_text(query, text):
     parts = str(text).lower().split()
     return any(query in part for part in parts)
 
-# ✅ פונקציה לחישוב מדד התאמה מתקדם
 def calculate_fit_score(player_row, club_row):
     score = 0
     weights = {
@@ -139,14 +138,11 @@ if player_query and not matching_players.empty:
     row = df[df["Player"] == selected_player].iloc[0]
 
     st.subheader(f"שחקן: {row['Player']}")
-
     st.write(f"ליגה: {row['Comp']}")
     st.write(f"גיל: {row['Age']}")
     st.write(f"עמדה: {row['Pos']}")
     st.write(f"דקות: {row['Min']} | גולים: {row['Gls']} | בישולים: {row['Ast']}")
     st.write(f"דריבלים מוצלחים: {row['Succ']} | מסירות מפתח: {row['KP']}")
-
-    st.metric("מדד YSP-75", "מחושב בנפרד...")
 
     club_query = st.text_input("הקלד שם קבוצה (חלק מהשם):").strip().lower()
     matching_clubs = [c for c in clubs_df["Club"].unique() if match_text(club_query, c)]
@@ -157,10 +153,35 @@ if player_query and not matching_players.empty:
         if not club_data.empty:
             club_row = club_data.iloc[0]
             fit_score = calculate_fit_score(player_row=row, club_row=club_row)
-            st.metric("מדד התאמה לקבוצה", f"{fit_score}%")
+            st.metric("רמת התאמה חזויה לקבוצה", f"{fit_score}%")
+            if fit_score >= 85:
+                st.success("התאמה מצוינת – סביר שיצליח במערכת הזו.")
+            elif fit_score >= 70:
+                st.info("התאמה סבירה – עשוי להסתגל היטב.")
+            else:
+                st.warning("התאמה נמוכה – דרושה התאמה טקטית או סבלנות.")
     elif club_query:
         st.warning("לא נמצאו קבוצות תואמות.")
 elif player_query:
     st.warning("שחקן לא נמצא. נסה שם מדויק או חלק ממנו.")
+
+# ⬇️ בודק התאמה מול כל הקבוצות
+if player_query and not matching_players.empty:
+    with st.expander("🔍 בדוק התאמה של השחקן מול כל הקבוצות במערכת"):
+        if st.button("חשב התאמה לכל הקבוצות"):
+            scores = []
+            for i, club_row in clubs_df.iterrows():
+                score = calculate_fit_score(player_row=row, club_row=club_row)
+                scores.append((club_row["Club"], score))
+            
+            top_scores = sorted(scores, key=lambda x: x[1], reverse=True)[:10]
+            top_df = pd.DataFrame(top_scores, columns=["Club", "Fit Score"])
+
+            st.subheader("📊 10 הקבוצות המתאימות ביותר לשחקן")
+            st.bar_chart(top_df.set_index("Club"))
+
+            # כפתור הורדת CSV
+            csv = pd.DataFrame(scores, columns=["Club", "Fit Score"]).to_csv(index=False).encode('utf-8')
+            st.download_button("📥 הורד את כל ההתאמות כ־CSV", data=csv, file_name=f"{row['Player']}_club_fits.csv", mime='text/csv')
 
 st.caption("הנתונים מבוססים על ניתוח אלגוריתמי לצרכים חינוכיים ואנליטיים בלבד.")
