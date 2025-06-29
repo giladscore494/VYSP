@@ -45,117 +45,119 @@ if player_input:
     filtered_df = df[df["Player"].str.lower().str.contains(player_input)]
 
     if not filtered_df.empty:
-        for idx, row in filtered_df.iterrows():
-            name = row["Player"]
-            league = row["Comp"]
-            age = row["Age"]
-            position = str(row["Pos"])
-            minutes = row["Min"]
-            goals = row["Gls"]
-            assists = row["Ast"]
-            dribbles = row["Succ"]
-            key_passes = row["KP"]
-            tackles = row["Tkl"]
-            interceptions = row["Int"]
-            clearances = row["Clr"]
-            blocks = row["Blocks"]
+        row = filtered_df.iloc[0]
+        name = row["Player"]
+        league = row["Comp"]
+        age = row["Age"]
+        position = str(row["Pos"])
+        minutes = row["Min"]
+        goals = row["Gls"]
+        assists = row["Ast"]
+        dribbles = row["Succ"]
+        key_passes = row["KP"]
+        tackles = row["Tkl"]
+        interceptions = row["Int"]
+        clearances = row["Clr"]
+        blocks = row["Blocks"]
 
-            st.subheader(f"שחקן: {name}")
-            st.write(f"ליגה: {league}")
-            st.write(f"גיל: {age}")
-            st.write(f"עמדה: {position}")
-            st.write(f"דקות משחק: {minutes}")
-            st.write(f"גולים: {goals}")
-            st.write(f"בישולים: {assists}")
-            st.write(f"דריבלים מוצלחים: {dribbles}")
-            st.write(f"מסירות מפתח: {key_passes}")
+        st.subheader(f"שחקן: {name}")
+        st.write(f"ליגה: {league}")
+        st.write(f"גיל: {age}")
+        st.write(f"עמדה: {position}")
+        st.write(f"דקות משחק: {minutes}")
+        st.write(f"גולים: {goals}")
+        st.write(f"בישולים: {assists}")
+        st.write(f"דריבלים מוצלחים: {dribbles}")
+        st.write(f"מסירות מפתח: {key_passes}")
 
-            score = 0
+        score = 0
 
-            if "GK" in position:
-                bm = benchmarks["GK"]
-                score = (
-                    (minutes / bm["Min"]) * 40 +
-                    (clearances / bm["Clr"]) * 20 +
-                    (tackles / bm["Tkl"]) * 20 +
-                    (blocks / bm["Blocks"]) * 20
-                )
-            elif "DF" in position:
-                bm = benchmarks["DF"]
-                score = (
-                    (tackles / bm["Tkl"]) * 18 +
-                    (interceptions / bm["Int"]) * 18 +
-                    (clearances / bm["Clr"]) * 18 +
-                    (blocks / bm["Blocks"]) * 10 +
-                    (minutes / bm["Min"]) * 10 +
-                    (goals / bm["Gls"]) * 13 +
-                    (assists / bm["Ast"]) * 13
-                )
-            elif "MF" in position:
-                bm = benchmarks["MF"]
-                score = (
-                    (goals / bm["Gls"]) * 20 +
-                    (assists / bm["Ast"]) * 20 +
-                    (dribbles / bm["Succ"]) * 20 +
-                    (key_passes / bm["KP"]) * 20 +
-                    (minutes / bm["Min"]) * 20
-                )
-            elif "FW" in position:
-                bm = benchmarks["FW"]
-                score = (
-                    (goals / bm["Gls"]) * 30 +
-                    (assists / bm["Ast"]) * 25 +
-                    (dribbles / bm["Succ"]) * 15 +
-                    (key_passes / bm["KP"]) * 15 +
-                    (minutes / bm["Min"]) * 15
-                )
-            else:
-                score = (goals * 3 + assists * 2 + minutes / 250)
+        if "GK" in position:
+            bm = benchmarks["GK"]
+            score = (
+                (minutes / bm["Min"]) * 40 +
+                (clearances / bm["Clr"]) * 20 +
+                (tackles / bm["Tkl"]) * 20 +
+                (blocks / bm["Blocks"]) * 20
+            )
+        elif "DF" in position:
+            bm = benchmarks["DF"]
+            score = (
+                (tackles / bm["Tkl"]) * 18 +
+                (interceptions / bm["Int"]) * 18 +
+                (clearances / bm["Clr"]) * 18 +
+                (blocks / bm["Blocks"]) * 10 +
+                (minutes / bm["Min"]) * 10 +
+                (goals / bm["Gls"]) * 13 +
+                (assists / bm["Ast"]) * 13
+            )
+        elif "MF" in position:
+            bm = benchmarks["MF"]
+            score = (
+                (goals / bm["Gls"]) * 20 +
+                (assists / bm["Ast"]) * 20 +
+                (dribbles / bm["Succ"]) * 20 +
+                (key_passes / bm["KP"]) * 20 +
+                (minutes / bm["Min"]) * 20
+            )
+        elif "FW" in position:
+            bm = benchmarks["FW"]
+            score = (
+                (goals / bm["Gls"]) * 30 +
+                (assists / bm["Ast"]) * 25 +
+                (dribbles / bm["Succ"]) * 15 +
+                (key_passes / bm["KP"]) * 15 +
+                (minutes / bm["Min"]) * 15
+            )
+        else:
+            score = (goals * 3 + assists * 2 + minutes / 250)
 
-            if minutes > 0:
-                contribution_per_90 = ((goals + assists + dribbles * 0.5 + key_passes * 0.5) / minutes) * 90
-                if contribution_per_90 >= 1.2:
-                    score += 15
-                elif contribution_per_90 >= 0.9:
-                    score += 10
-                elif contribution_per_90 >= 0.6:
-                    score += 5
+        if minutes > 0:
+            contribution_per_90 = ((goals + assists + dribbles * 0.5 + key_passes * 0.5) / minutes) * 90
+            if contribution_per_90 >= 1.2:
+                score += 15
+            elif contribution_per_90 >= 0.9:
+                score += 10
+            elif contribution_per_90 >= 0.6:
+                score += 5
 
-            if age <= 20:
-                score *= 1.1
-            elif age <= 23:
-                score *= 1.05
+        if age <= 20:
+            score *= 1.1
+        elif age <= 23:
+            score *= 1.05
 
-            league_weight = league_weights.get(league.strip(), 0.9)
-            score *= league_weight
-            score = min(round(score, 2), 100)
+        league_weight = league_weights.get(league.strip(), 0.9)
+        score *= league_weight
+        score = min(round(score, 2), 100)
 
-            st.metric("מדד YSP-75", score)
+        st.metric("מדד YSP-75", score)
 
-            # מדד התאמה לקבוצה
-            club_input = st.text_input("הזן קבוצה לבדיקה (לדוגמה: Paris Saint-Germain):")
-            if club_input:
-                club_data = clubs_df[clubs_df["Club"].str.lower() == club_input.lower()]
-                if not club_data.empty:
-                    club_row = club_data.iloc[0]
-                    fit_score = 100
+        # שדה הקלדה עם השלמה חכמה לשם קבוצה
+        club_query = st.text_input("הקלד שם קבוצה לבדיקה (autocomplete):").strip().lower()
+        matching_clubs = [c for c in clubs_df["Club"].unique().tolist() if club_query in c.lower()]
 
-                    if "Attacking" in club_row["Playing Style"] and "FW" in position:
-                        fit_score += 5
-                    if "Balanced" in club_row["Playing Style"] and "MF" in position:
-                        fit_score += 3
-                    if "High" in club_row["Defensive Line Depth"] and "DF" in position:
-                        fit_score += 5
-                    if "High Press" in club_row["Pressing Style"] and "FW" in position:
-                        fit_score += 3
+        if club_query and matching_clubs:
+            selected_club = st.selectbox("בחר קבוצה מתוך התוצאות:", matching_clubs)
+            club_data = clubs_df[clubs_df["Club"] == selected_club]
+            if not club_data.empty:
+                club_row = club_data.iloc[0]
+                fit_score = 100
 
-                    fit_score = min(fit_score, 100)
-                    st.metric("מדד התאמה לקבוצה", f"{fit_score}%")
-                else:
-                    st.warning("שם קבוצה לא נמצא במאגר.")
+                if "Attacking" in club_row["Playing Style"] and "FW" in position:
+                    fit_score += 5
+                if "Balanced" in club_row["Playing Style"] and "MF" in position:
+                    fit_score += 3
+                if "High" in club_row["Defensive Line Depth"] and "DF" in position:
+                    fit_score += 5
+                if "High Press" in club_row["Pressing Style"] and "FW" in position:
+                    fit_score += 3
 
-            st.write("---")
+                fit_score = min(fit_score, 100)
+                st.metric("מדד התאמה לקבוצה", f"{fit_score}%")
+        elif club_query:
+            st.warning("לא נמצאו קבוצות תואמות.")
+
     else:
         st.error("שחקן לא נמצא. נסה שם מדויק או חלק ממנו.")
 
-st.caption("הנתונים נלקחו ממקורות חופשיים ונותחו בעזרת אלגוריתם. המידע אינו רשמי ומשמש להערכה בלבד.")
+st.caption("הנתונים נלקחו ממקורות חופשיים ונותחו באמצעות אלגוריתם. המידע אינו רשמי.")    
