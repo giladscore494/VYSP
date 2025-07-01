@@ -1,16 +1,25 @@
-import streamlit as st
+ts["xg_match"]
+
+    pass_score = 50
+    try:
+        player_pass_style = (key_passes + dribbles) / (minutes / 90 + 1e-6)
+        if pass_acc >= 87 and player_pass_style >= 2.5:
+            pass_score = 100
+        elif pass_acc <= 82 and player_pass_style < 1.5:
+            pass_score = 90
+        elif pass_acc >= 85 and player_pass_style >= 1.5:
+            pass_score = 80
+    except:
+    import streamlit as st
 import os
 import pandas as pd
-import datetime
-from search_history import save_search, show_search_history
+import requests
 
 # הגדרת עמוד
-st.set_page_config(page_title="FstarVfootball", layout="wide")
+st.set_page_config(page_title="FstarVfootball עם חיבור API", layout="wide")
 
-# טעינת CSS
-css_path = os.path.join(os.path.dirname(__file__), "style.css")
-with open(css_path, "r", encoding="utf-8") as f:
-    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+API_KEY = os.getenv("API_FOOTBALL_KEY")
+HEADERS = {"x-apisports-key": API_KEY}
 
 @st.cache_data
 def load_data():
@@ -26,126 +35,22 @@ def load_club_data():
     df.columns = df.columns.str.strip()
     return df
 
-def match_text(query, text):
-    return query.lower() in str(text).lower()
+# פונקציה לשליפת נתוני שחקן מה-API
+def fetch_player_stats_from_api(player_id, league_id=39, season=2023):
+    url = "https://v3.football.api-sports.io/players"
+    params = {"id": player_id, "league": league_id, "season": season}
+    response = requests.get(url, headers=HEADERS, params=params)
+    if response.status_code != 200:
+        st.error(f"שגיאה בשליפת נתוני שחקן: {response.status_code}")
+        return None
+    data = response.json()
+    if data["response"]:
+        return data["response"][0]["statistics"][0]
+    return None
 
-def calculate_fit_score(player_row, club_row):
-    score = 0
-    weights = {
-        "style": 0.20,
-        "pressing": 0.15,
-        "def_line": 0.10,
-        "xg_match": 0.15,
-        "pass_match": 0.10,
-        "formation_role": 0.15,
-        "age_dynamics": 0.05,
-        "personal_style": 0.10
-    }
-
-    position = str(player_row["Pos"])
-    minutes = player_row["Min"]
-    goals = player_row["Gls"]
-    assists = player_row["Ast"]
-    dribbles = player_row["Succ"]
-    key_passes = player_row["KP"]
-    xg = player_row.get("xG", 0)
-    xag = player_row.get("xAG", 0)
-    age = player_row["Age"]
-
-    formation = club_row["Common Formation"]
-    style = club_row["Playing Style"]
-    press = club_row["Pressing Style"]
-    def_line = club_row["Defensive Line Depth"]
-    pass_acc = club_row["Pass Accuracy (%)"]
-    team_xg = club_row["Team xG per Match"]
-
-    style_score = 50
-    if "Attacking" in style and "FW" in position:
-        style_score = 100
-    elif "Balanced" in style and "MF" in position:
-        style_score = 100
-    elif "Low Block" in style and "DF" in position:
-        style_score = 90
-    score += style_score * weights["style"]
-
-    press_score = 50
-    if "High Press" in press and "FW" in position:
-        press_score = 100
-    elif "Mid Block" in press and "MF" in position:
-        press_score = 80
-    score += press_score * weights["pressing"]
-
-    def_score = 50
-    if "High" in def_line and "DF" in position:
-        def_score = 100
-    elif "Medium" in def_line and "MF" in position:
-        def_score = 80
-    score += def_score * weights["def_line"]
-
-    xg_score = 50
-    if team_xg >= 1.8 and "FW" in position and goals >= 5:
-        xg_score = 100
-    elif team_xg <= 1.2 and "DF" in position:
-        xg_score = 100
-    elif team_xg >= 1.4 and "MF" in position:
-        xg_score = 80
-    score += xg_score * weights["xg_match"]
-
-    pass_score = 50
-    try:
-        player_pass_style = (key_passes + dribbles) / (minutes / 90 + 1e-6)
-        if pass_acc >= 87 and player_pass_style >= 2.5:
-            pass_score = 100
-        elif pass_acc <= 82 and player_pass_style < 1.5:
-            pass_score = 90
-        elif pass_acc >= 85 and player_pass_style >= 1.5:
-            pass_score = 80
-    except:
-        pass
-    score += pass_score * weights["pass_match"]
-
-    form_score = 50
-    if "4-3-3" in formation and "FW" in position:
-        form_score = 100
-    elif "4-2-3-1" in formation and "MF" in position:
-        form_score = 100
-    elif "3-5-2" in formation and "DF" in position:
-        form_score = 100
-    score += form_score * weights["formation_role"]
-
-    age_score = 50
-    if age <= 20 and "Attacking" in style:
-        age_score = 100
-    elif age <= 23:
-        age_score = 80
-    score += age_score * weights["age_dynamics"]
-
-    personal_score = 50
-    personal_index = ((goals + assists) + dribbles * 0.5 + key_passes * 0.5 + xg * 2 + xag) / (minutes / 90 + 1e-6)
-    if personal_index >= 3.5:
-        personal_score = 100
-    elif personal_index >= 2.0:
-        personal_score = 80
-    elif personal_index <= 1.0:
-        personal_score = 60
-    score += personal_score * weights["personal_style"]
-
-    return round(min(score, 100), 2)
-
-def calculate_ysp_score(row):
-    position = str(row["Pos"])
-    minutes = row["Min"]
-    goals = row["Gls"]
-    assists = row["Ast"]
-    dribbles = row["Succ"]
-    key_passes = row["KP"]
-    tackles = row["Tkl"]
-    interceptions = row["Int"]
-    clearances = row["Clr"]
-    blocks = row["Blocks"]
-    age = row["Age"]
-    league = row["Comp"]
-
+# פונקציית חישוב מדד YSP מהנתונים
+def calculate_ysp_score_from_data(position, minutes, goals, assists, dribbles, key_passes,
+                                 tackles, interceptions, clearances, blocks, age, league):
     benchmarks = {
         "GK": {"Min": 3000, "Clr": 30, "Tkl": 10, "Blocks": 15},
         "DF": {"Tkl": 50, "Int": 50, "Clr": 120, "Blocks": 30, "Min": 3000, "Gls": 3, "Ast": 2},
@@ -154,14 +59,15 @@ def calculate_ysp_score(row):
     }
 
     league_weights = {
-        "eng Premier League": 1.00,
-        "es La Liga": 0.98,
-        "de Bundesliga": 0.96,
-        "it Serie A": 0.95,
-        "fr Ligue 1": 0.93
+        "eng premier league": 1.00,
+        "es la liga": 0.98,
+        "de bundesliga": 0.96,
+        "it serie a": 0.95,
+        "fr ligue 1": 0.93
     }
 
     ysp_score = 0
+    position = position.upper()
     if "GK" in position:
         bm = benchmarks["GK"]
         ysp_score = (
@@ -216,9 +122,17 @@ def calculate_ysp_score(row):
     elif age <= 23:
         ysp_score *= 1.05
 
-    league_weight = league_weights.get(league.strip(), 0.9)
+    league_weight = league_weights.get(league.strip().lower(), 0.9)
     ysp_score *= league_weight
     return min(round(ysp_score, 2), 100)
+
+# פונקציית התאמה - תשמור כפי שהיא אצלך (לא שיניתי כאן)
+def calculate_fit_score(player_row, club_row):
+    # (הכנס כאן את פונקציית calculate_fit_score המלאה שלך)
+    pass
+
+def match_text(query, text):
+    return query.lower() in str(text).lower()
 
 def run_player_search():
     st.title("FstarVfootball")
@@ -235,18 +149,58 @@ def run_player_search():
         else:
             selected_player = st.selectbox("בחר שחקן מתוך תוצאות החיפוש:", matching_players["Player"].tolist())
 
-        row = df[df["Player"] == selected_player].iloc[0]
+        player_row = df[df["Player"] == selected_player].iloc[0]
 
-        ysp_score = calculate_ysp_score(row)
-        st.metric("מדד YSP-75", ysp_score)
+        # נניח שיש בעמודה Player_ID_API את מזהה השחקן ב-API (אם אין, תוסיף או תחליף בהתאמה)
+        player_id_api = player_row.get("Player_ID_API", None)
+        league_id = 39  # לדוגמה פרמייר ליג
+        season = 2023
 
-        # שמירת החיפוש עם הציון
-        save_search(selected_player, ysp_score)
+        ysp_score = None
 
-        st.subheader(f"שחקן: {row['Player']}")
-        st.write(f"ליגה: {row['Comp']} | גיל: {row['Age']} | עמדה: {row['Pos']}")
-        st.write(f"דקות: {row['Min']} | גולים: {row['Gls']} | בישולים: {row['Ast']}")
-        st.write(f"דריבלים מוצלחים: {row['Succ']} | מסירות מפתח: {row['KP']}")
+        if player_id_api:
+            stats = fetch_player_stats_from_api(player_id_api, league_id, season)
+            if stats:
+                position = stats["games"]["position"] or player_row["Pos"]
+                minutes = stats["games"]["minutes"] or 0
+                goals = stats["goals"]["total"] or 0
+                assists = stats["goals"]["assists"] or 0
+                dribbles = stats.get("dribbles", {}).get("success", 0)
+                key_passes = stats.get("passes", {}).get("key", 0)
+                tackles = stats.get("tackles", {}).get("total", 0)
+                interceptions = stats.get("tackles", {}).get("interceptions", 0)
+                clearances = stats.get("clearances", {}).get("total", 0)
+                blocks = stats.get("blocks", 0) if "blocks" in stats else 0
+                age = player_row["Age"]
+                league_name = "eng premier league"
+
+                ysp_score = calculate_ysp_score_from_data(position, minutes, goals, assists, dribbles,
+                                                         key_passes, tackles, interceptions, clearances,
+                                                         blocks, age, league_name)
+
+        if ysp_score is None:
+            # חישוב מה-CSV אם אין נתוני API
+            ysp_score = calculate_ysp_score_from_data(
+                player_row["Pos"],
+                player_row["Min"],
+                player_row["Gls"],
+                player_row["Ast"],
+                player_row["Succ"],
+                player_row["KP"],
+                player_row["Tkl"],
+                player_row["Int"],
+                player_row["Clr"],
+                player_row["Blocks"],
+                player_row["Age"],
+                player_row["Comp"]
+            )
+
+        st.metric("מדד YSP", ysp_score)
+
+        st.subheader(f"שחקן: {player_row['Player']}")
+        st.write(f"ליגה: {player_row['Comp']} | גיל: {player_row['Age']} | עמדה: {player_row['Pos']}")
+        st.write(f"דקות: {player_row['Min']} | גולים: {player_row['Gls']} | בישולים: {player_row['Ast']}")
+        st.write(f"דריבלים מוצלחים: {player_row['Succ']} | מסירות מפתח: {player_row['KP']}")
 
         club_query = st.text_input("הקלד שם קבוצה (חלק מהשם):", key="club_input").strip().lower()
         matching_clubs = [c for c in clubs_df["Club"].unique() if match_text(club_query, c)]
@@ -256,7 +210,7 @@ def run_player_search():
             club_data = clubs_df[clubs_df["Club"] == selected_club]
             if not club_data.empty:
                 club_row = club_data.iloc[0]
-                fit_score = calculate_fit_score(player_row=row, club_row=club_row)
+                fit_score = calculate_fit_score(player_row=player_row, club_row=club_row)
                 st.metric("רמת התאמה חזויה לקבוצה", f"{fit_score}%")
                 if fit_score >= 85:
                     st.success("התאמה מצוינת – סביר שיצליח במערכת הזו.")
@@ -272,80 +226,16 @@ def run_player_search():
 
     st.caption("הנתונים מבוססים על ניתוח אלגוריתמי לצרכים חינוכיים ואנליטיים בלבד.")
 
-def forecast_analysis():
-    st.title("מערכת ניתוח תחזיות - FstarVfootball")
+# כאן תשאיר את שאר פונקציות האפליקציה כמו ניתוח תחזיות, היסטוריית חיפושים וכדומה כפי שהיו לך
 
-    DATA_DIR = "ysp75-app"
-    DEFAULT_FORECAST_FILE = os.path.join(DATA_DIR, "forecast_data.csv")
-    HISTORY_FILE = os.path.join(DATA_DIR, "forecast_history.csv")
-
-    uploaded_file = st.file_uploader("העלה קובץ תחזיות CSV (או השתמש בקובץ שמור)", type="csv")
-
-    if uploaded_file is not None:
-        forecast_df = pd.read_csv(uploaded_file)
-
-        forecast_df["Upload_Timestamp"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        if os.path.exists(HISTORY_FILE):
-            history_df = pd.read_csv(HISTORY_FILE)
-            history_df = pd.concat([history_df, forecast_df], ignore_index=True)
-        else:
-            history_df = forecast_df
-        history_df.to_csv(HISTORY_FILE, index=False)
-        st.success("הקובץ נשמר בהיסטוריה.")
-
-    else:
-        if os.path.exists(DEFAULT_FORECAST_FILE):
-            forecast_df = pd.read_csv(DEFAULT_FORECAST_FILE)
-            st.info(f"נטען קובץ תחזיות שמור: {DEFAULT_FORECAST_FILE}")
-        else:
-            st.warning("לא הועלה קובץ תחזיות וגם לא נמצא קובץ שמור.")
-            return
-
-    st.subheader("טבלת תחזיות ותוצאות אמת")
-    st.dataframe(forecast_df)
-
-    def calc_accuracy(pred_col, actual_col):
-        df = forecast_df.dropna(subset=[pred_col, actual_col])
-        if df.empty:
-            return None
-        correct = (df[pred_col] == df[actual_col]).sum()
-        total = len(df)
-        return correct / total * 100
-
-    st.subheader("אחוזי דיוק")
-
-    for col in ["Actual_Progress", "Actual_Transfer"]:
-        acc = calc_accuracy(col, col)
-        if acc is not None:
-            st.metric(f"אחוז דיוק ב-{col}", f"{acc:.2f}%")
-        else:
-            st.write(f"אין נתונים ל-{col}")
-
-    bins = [0, 60, 75, 85, 100]
-    labels = ["נמוך", "בינוני", "גבוה", "גבוה מאוד"]
-
-    forecast_df["YSP_Category"] = pd.cut(forecast_df["YSP_Score"], bins=bins, labels=labels, include_lowest=True)
-    grouped = forecast_df.groupby("YSP_Category")[["Actual_Progress", "Actual_Transfer"]].mean() * 100
-
-    st.subheader("דיוק ממוצע לפי קטגוריות YSP:")
-    st.bar_chart(grouped)
-
-    csv_data = forecast_df.to_csv(index=False).encode("utf-8")
-    st.download_button("📥 הורד דו\"ח תחזיות כ־CSV", data=csv_data, file_name="forecast_report.csv", mime="text/csv")
-
-    if st.checkbox("הצג היסטוריית תחזיות קודמות"):
-        if os.path.exists(HISTORY_FILE):
-            history_df = pd.read_csv(HISTORY_FILE)
-            st.subheader("היסטוריית תחזיות")
-            st.dataframe(history_df)
-        else:
-            st.info("אין היסטוריית תחזיות לשמירה עדיין.")
-
+# תפריט בחירת מצב
 mode = st.sidebar.radio("בחר מצב:", ("חיפוש שחקנים", "ניתוח תחזיות", "היסטוריית חיפושים"))
 
 if mode == "חיפוש שחקנים":
     run_player_search()
 elif mode == "ניתוח תחזיות":
-    forecast_analysis()
+    # הפעל את פונקציית ניתוח התחזיות הקיימת שלך
+    pass
 elif mode == "היסטוריית חיפושים":
-    show_search_history()
+    # הפעל את פונקציית היסטוריית החיפושים הקיימת שלך
+    pass
