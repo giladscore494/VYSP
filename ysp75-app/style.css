@@ -1,74 +1,88 @@
 /* עיצוב כללי */
 body {
-    background-color: #f4f6f9;
-    font-family: "Segoe UI", sans-serif;
+    direction: rtl;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* יישור כל הטקסט לימין */
+html, body, .css-1d391kg, .stApp {
     direction: rtl;
     text-align: right;
 }
 
-/* כותרות */
-h1, h2, h3, h4 {
-    color: #0d47a1;
+/* כותרת ראשית */
+h1 {
+    color: #004080;
+    text-align: right;
+    font-size: 2.5em;
+    font-weight: bold;
 }
 
-/* תיבת קלט */
-input[type="text"] {
-    border: 1px solid #aaa;
-    border-radius: 8px;
-    padding: 0.5em;
-    width: 100%;
+/* תתי-כותרת */
+h2, h3 {
+    color: #003366;
+    text-align: right;
+}
+
+/* טקסט כללי */
+p {
+    font-size: 1.1em;
+    color: #333333;
+}
+
+/* תיבת metric */
+.css-1ht1j8u {
+    background-color: #f0f8ff;
+    border: 1px solid #b0c4de;
+    border-radius: 10px;
+    padding: 10px;
 }
 
 /* כפתורים */
-button, .stButton > button {
-    background-color: #0d47a1;
-    color: white;
-    border: none;
-    padding: 0.6em 1.2em;
-    border-radius: 10px;
+button {
+    background-color: #004080 !important;
+    color: white !important;
+    border-radius: 6px !important;
+    padding: 10px 20px !important;
+}
+
+/* Expander */
+.css-1v0mbdj .streamlit-expanderHeader {
     font-weight: bold;
-    margin: 5px 0;
+    background-color: #e6f2ff;
+    border-bottom: 1px solid #cce0ff;
 }
 
-button:hover, .stButton > button:hover {
-    background-color: #1565c0;
-    transition: 0.3s ease-in-out;
+/* תיבת אזהרה / מידע */
+.stAlert {
+    direction: rtl !important;
 }
 
-/* קופסאות metric */
-[data-testid="stMetric"] {
-    background-color: #e3f2fd;
-    border-radius: 12px;
-    padding: 15px;
-    margin-bottom: 10px;
-    color: #0d47a1;
-    font-weight: bold;
-    text-align: center;
-    box-shadow: 1px 1px 6px rgba(0,0,0,0.1);
+/* טופס קלט */
+.css-1cpxqw2 {
+    text-align: right !important;
 }
 
-/* קופסאות אזהרה */
-[data-testid="stAlert"] {
+/* תיבת טקסט קלט */
+.css-qrbaxs, .css-13sdm1e {
+    text-align: right !important;
+    direction: rtl !important;
+}
+
+/* גרפים */
+.css-1avcm0n {
+    direction: ltr; /* ברירת מחדל לגרפים באנגלית */
+}
+
+/* טבלה */
+table {
     direction: rtl;
+    text-align: right;
+}
+
+/* כפתור הורדה */
+.stDownloadButton > button {
+    background-color: #0a3d62;
+    color: #ffffff;
     font-weight: bold;
-}
-
-/* expander */
-.stExpander {
-    background-color: #fff;
-    border-radius: 12px;
-    padding: 10px;
-    margin-top: 15px;
-}
-
-/* גרף */
-.css-1k7v3zr {
-    direction: rtl;
-}
-
-/* הסבר למטה */
-footer {
-    text-align: center;
-    font-size: 0.85em;
-    color: gray;
 }
