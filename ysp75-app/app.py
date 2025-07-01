@@ -23,7 +23,6 @@ def load_club_data():
     df.columns = df.columns.str.strip()
     return df
 
-# פונקציה לשליפת נתוני שחקן מה-API
 def fetch_player_stats_from_api(player_id, league_id=39, season=2023):
     url = "https://v3.football.api-sports.io/players"
     params = {"id": player_id, "league": league_id, "season": season}
@@ -36,7 +35,6 @@ def fetch_player_stats_from_api(player_id, league_id=39, season=2023):
         return data["response"][0]["statistics"][0]
     return None
 
-# פונקציית חישוב מדד YSP מהנתונים
 def calculate_ysp_score_from_data(position, minutes, goals, assists, dribbles, key_passes,
                                  tackles, interceptions, clearances, blocks, age, league):
     benchmarks = {
@@ -114,9 +112,9 @@ def calculate_ysp_score_from_data(position, minutes, goals, assists, dribbles, k
     ysp_score *= league_weight
     return min(round(ysp_score, 2), 100)
 
-# פונקציית התאמה - כאן יש להכניס את הקוד המלא שלך
+# תחליף את זה בקוד שלך או השאר אם תרצה
 def calculate_fit_score(player_row, club_row):
-    # TODO: להכניס כאן את פונקציית ההתאמה שלך
+    # TODO: להכניס כאן את פונקציית ההתאמה המלאה שלך
     pass
 
 def match_text(query, text):
