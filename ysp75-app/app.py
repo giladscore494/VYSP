@@ -3,7 +3,6 @@ import pandas as pd
 import os
 
 st.set_page_config(page_title="FstarVfootball – מדד YSP-75", layout="wide")
-
 # מצב לילה – סרגל צד
 dark_mode = st.sidebar.toggle("🌙 מצב לילה", value=False)
 
@@ -12,13 +11,9 @@ css_path = os.path.join(os.path.dirname(__file__), "style.css")
 with open(css_path, "r", encoding="utf-8") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-# החלפת class בגוף הדף
-toggle_class = "dark-mode" if dark_mode else "light-mode"
-st.markdown(f"""
-    <script>
-        document.body.className = '{toggle_class}';
-    </script>
-""", unsafe_allow_html=True)
+# עטיפת כל התוכן בקלאס מתאים
+container_class = "dark-mode" if dark_mode else "light-mode"
+st.markdown(f'<div class="{container_class}">', unsafe_allow_html=True)
 
 # טעינת הנתונים
 @st.cache_data
