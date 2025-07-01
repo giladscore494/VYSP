@@ -4,6 +4,23 @@ import os
 
 st.set_page_config(page_title="FstarVfootball – מדד YSP-75", layout="wide")
 
+# הגדרת toggle למצב יום/לילה
+dark_mode = st.sidebar.toggle("🌙 מצב לילה", value=False)
+
+# CSS ודגל למצב
+with open("style.css") as f:
+    css = f.read()
+    st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
+
+# JavaScript להוספת מחלקה לגוף הדף
+toggle_class = "dark-mode" if dark_mode else ""
+st.markdown(f"""
+    <script>
+    document.body.className = '{toggle_class}';
+    </script>
+""", unsafe_allow_html=True)
+
+
 # CSS חיצוני (מותאם: רק אם הקובץ קיים)
 if os.path.exists("style.css"):
     with open("style.css", encoding="utf-8") as f:
