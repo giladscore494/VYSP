@@ -8,10 +8,13 @@ st.set_page_config(page_title="FstarVfootball – מדד YSP-75", layout="wide")
 dark_mode = st.sidebar.toggle("🌙 מצב לילה", value=False)
 
 # CSS ודגל למצב
-with open("style.css") as f:
-    css_path = os.path.join(os.path.dirname(__file__), "style.css")
-with open(css_path, "r", encoding="utf-8") as f:
-    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+css_path = os.path.join(os.path.dirname(__file__), "style.css")
+if os.path.exists(css_path):
+    with open(css_path, "r", encoding="utf-8") as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+else:
+    st.warning("⚠️ הקובץ style.css לא נמצא בתיקייה.")
+
 
 # JavaScript להוספת מחלקה לגוף הדף
 toggle_class = "dark-mode" if dark_mode else ""
