@@ -1,16 +1,4 @@
-ts["xg_match"]
-
-    pass_score = 50
-    try:
-        player_pass_style = (key_passes + dribbles) / (minutes / 90 + 1e-6)
-        if pass_acc >= 87 and player_pass_style >= 2.5:
-            pass_score = 100
-        elif pass_acc <= 82 and player_pass_style < 1.5:
-            pass_score = 90
-        elif pass_acc >= 85 and player_pass_style >= 1.5:
-            pass_score = 80
-    except:
-    import streamlit as st
+import streamlit as st
 import os
 import pandas as pd
 import requests
@@ -126,9 +114,9 @@ def calculate_ysp_score_from_data(position, minutes, goals, assists, dribbles, k
     ysp_score *= league_weight
     return min(round(ysp_score, 2), 100)
 
-# פונקציית התאמה - תשמור כפי שהיא אצלך (לא שיניתי כאן)
+# פונקציית התאמה - כאן יש להכניס את הקוד המלא שלך
 def calculate_fit_score(player_row, club_row):
-    # (הכנס כאן את פונקציית calculate_fit_score המלאה שלך)
+    # TODO: להכניס כאן את פונקציית ההתאמה שלך
     pass
 
 def match_text(query, text):
@@ -151,9 +139,8 @@ def run_player_search():
 
         player_row = df[df["Player"] == selected_player].iloc[0]
 
-        # נניח שיש בעמודה Player_ID_API את מזהה השחקן ב-API (אם אין, תוסיף או תחליף בהתאמה)
         player_id_api = player_row.get("Player_ID_API", None)
-        league_id = 39  # לדוגמה פרמייר ליג
+        league_id = 39  # לדוגמה, פרמייר ליג
         season = 2023
 
         ysp_score = None
@@ -179,7 +166,6 @@ def run_player_search():
                                                          blocks, age, league_name)
 
         if ysp_score is None:
-            # חישוב מה-CSV אם אין נתוני API
             ysp_score = calculate_ysp_score_from_data(
                 player_row["Pos"],
                 player_row["Min"],
@@ -226,7 +212,7 @@ def run_player_search():
 
     st.caption("הנתונים מבוססים על ניתוח אלגוריתמי לצרכים חינוכיים ואנליטיים בלבד.")
 
-# כאן תשאיר את שאר פונקציות האפליקציה כמו ניתוח תחזיות, היסטוריית חיפושים וכדומה כפי שהיו לך
+# כאן תוכל להוסיף פונקציות נוספות שלך כמו ניתוח תחזיות, היסטוריית חיפושים וכו'.
 
 # תפריט בחירת מצב
 mode = st.sidebar.radio("בחר מצב:", ("חיפוש שחקנים", "ניתוח תחזיות", "היסטוריית חיפושים"))
@@ -234,8 +220,8 @@ mode = st.sidebar.radio("בחר מצב:", ("חיפוש שחקנים", "ניתו�
 if mode == "חיפוש שחקנים":
     run_player_search()
 elif mode == "ניתוח תחזיות":
-    # הפעל את פונקציית ניתוח התחזיות הקיימת שלך
+    # כאן תפעיל את פונקציית ניתוח התחזיות שלך
     pass
 elif mode == "היסטוריית חיפושים":
-    # הפעל את פונקציית היסטוריית החיפושים הקיימת שלך
+    # כאן תפעיל את פונקציית היסטוריית החיפושים שלך
     pass
