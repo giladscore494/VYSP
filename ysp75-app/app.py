@@ -141,7 +141,7 @@ import streamlit as st
 import pandas as pd
 
 def run_app(df, clubs_df, calculate_fit_score, match_text):
-    st.title("FstarVfootball – מדד YSP-75 + מדד התאמה לקבוצה")
+    st.title("FstarVfootball")
 
     player_query = st.text_input("הקלד שם שחקן (חלק מהשם):").strip().lower()
     matching_players = df[df["Player"].apply(lambda name: match_text(player_query, name))]
