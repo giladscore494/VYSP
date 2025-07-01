@@ -228,10 +228,10 @@ clubs_df = load_club_data()
 matching_players = df[df["Player"].apply(lambda name: match_text(player_query, name))]
 
 if player_query and not matching_players.empty:
-        if len(matching_players) == 1:
-        selected_player = matching_players["Player"].iloc[0]
-    else:
-        selected_player = st.selectbox("בחר שחקן מתוך תוצאות החיפוש:", matching_players["Player"].tolist())
+    if len(matching_players) == 1:
+    selected_player = matching_players["Player"].iloc[0]
+else:
+    selected_player = st.selectbox("בחר שחקן מתוך תוצאות החיפוש:", matching_players["Player"].tolist())
     row = df[df["Player"] == selected_player].iloc[0]
 
     st.subheader(f"שחקן: {row['Player']}")
