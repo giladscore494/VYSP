@@ -2,6 +2,7 @@ import streamlit as st
 import os
 import pandas as pd
 import datetime
+from search_history import save_search, show_search_history
 
 # הגדרת עמוד
 st.set_page_config(page_title="FstarVfootball", layout="wide")
@@ -219,42 +220,6 @@ def calculate_ysp_score(row):
     ysp_score *= league_weight
     return min(round(ysp_score, 2), 100)
 
-SEARCH_HISTORY_FILE = os.path.join("ysp75-app", "search_history.csv")
-
-def save_search(player_name, ysp_score):
-    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    new_entry = pd.DataFrame([{
-        "Player": player_name,
-        "YSP_Score": ysp_score,
-        "Timestamp": now
-    }])
-
-    if os.path.exists(SEARCH_HISTORY_FILE):
-        history_df = pd.read_csv(SEARCH_HISTORY_FILE)
-        history_df = pd.concat([history_df, new_entry], ignore_index=True)
-    else:
-        history_df = new_entry
-
-    history_df.to_csv(SEARCH_HISTORY_FILE, index=False)
-
-def show_search_history():
-    st.title("היסטוריית חיפושי שחקנים")
-
-    if os.path.exists(SEARCH_HISTORY_FILE):
-        history_df = pd.read_csv(SEARCH_HISTORY_FILE)
-
-        counts = history_df.groupby(["Player", "YSP_Score"]).size().reset_index(name="מספר חיפושים")
-        counts = counts.sort_values(by="מספר חיפושים", ascending=False)
-
-        st.subheader("מספר חיפושים לפי שחקן וציוני YSP")
-        st.dataframe(counts)
-
-        if st.checkbox("הצג טבלת היסטוריה מפורטת"):
-            st.subheader("טבלת חיפושים מלאה")
-            st.dataframe(history_df)
-    else:
-        st.info("טרם קיימת היסטוריית חיפושים לשמירה.")
-
 def run_player_search():
     st.title("FstarVfootball")
 
@@ -319,7 +284,6 @@ def forecast_analysis():
     if uploaded_file is not None:
         forecast_df = pd.read_csv(uploaded_file)
 
-        # שמירת ההעלאה להיסטוריה עם Timestamp
         forecast_df["Upload_Timestamp"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         if os.path.exists(HISTORY_FILE):
             history_df = pd.read_csv(HISTORY_FILE)
