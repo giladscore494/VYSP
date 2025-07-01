@@ -1,67 +1,108 @@
 /* עיצוב כללי */
 body {
-    font-family: Arial, sans-serif;
+    background-color: #f9f9f9;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
-.stButton>button {
-    background-color: #003366;
+/* כותרת ראשית */
+h1 {
+    color: #1a1a1a;
+    text-align: center;
+    margin-bottom: 1rem;
+    font-size: 2.5rem;
+}
+
+/* כותרות משנה */
+h2, h3, h4 {
+    color: #333;
+    margin-top: 1.5rem;
+}
+
+/* טקסט רגיל */
+p, label, .stTextInput label, .stSelectbox label {
+    color: #444;
+    font-size: 1.05rem;
+}
+
+/* כפתורים */
+button, .stButton > button {
+    background-color: #0056b3;
     color: white;
-    border-radius: 12px;
-    padding: 10px 20px;
+    border-radius: 8px;
+    padding: 0.6rem 1.2rem;
     font-weight: bold;
+    border: none;
     transition: background-color 0.3s ease;
 }
-.stButton>button:hover {
-    background-color: #005599;
+
+button:hover, .stButton > button:hover {
+    background-color: #004494;
 }
 
-h1, h2, h3 {
-    color: #003366;
+/* טבלאות */
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 1rem;
 }
 
-.metric-label {
-    font-size: 20px;
+table, th, td {
+    border: 1px solid #ccc;
+}
+
+th {
+    background-color: #eeeeee;
     font-weight: bold;
-    color: #444;
+    text-align: center;
 }
 
-.metric-value {
-    font-size: 28px;
-    color: #0077cc;
-    font-weight: bold;
-    margin-bottom: 10px;
+td {
+    padding: 0.5rem;
+    text-align: center;
 }
 
-/* התראות */
-.stAlert {
+/* תיבת התראה */
+.stAlert, .stSuccess, .stWarning, .stError {
+    border-radius: 10px !important;
+    font-size: 1rem !important;
+}
+
+/* גרף */
+.stPlotlyChart, .stAltairChart, .stBarChart {
+    background-color: white;
+    border: 1px solid #ddd;
     border-radius: 12px;
-    padding: 16px;
-    font-size: 15px;
+    padding: 1rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    margin-top: 1rem;
 }
 
-/* כרטיסים */
-.css-1siy2j7 {
+/* מדדים */
+.stMetric {
     background-color: #ffffff;
     border-radius: 16px;
-    padding: 20px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 1.2rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    margin: 1rem 0;
+    text-align: center;
 }
 
-/* כותרות טבלה */
-thead tr th {
-    background-color: #003366;
-    color: white;
+.stMetric > div {
+    font-size: 1.3rem;
     font-weight: bold;
 }
 
-/* טבלה כללית */
-table {
-    border-radius: 8px;
-    overflow: hidden;
+/* תיבת קלט */
+input, .stTextInput input {
+    border-radius: 10px !important;
+    padding: 0.5rem !important;
+    border: 1px solid #ccc !important;
 }
 
-/* פסקה רגילה */
-p {
-    font-size: 14px;
-    color: #333;
+/* הרחבות */
+.stExpander {
+    background-color: #f0f4f8;
+    border-radius: 12px;
+    padding: 1rem;
+    margin-top: 1rem;
 }
