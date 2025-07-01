@@ -1,73 +1,63 @@
-/* עיצוב כללי */
-body {
-    font-family: "Segoe UI", sans-serif;
-    transition: background-color 0.3s, color 0.3s;
+/* מצב יום */
+body.light-mode {
+    background-color: #ffffff;
+    color: #000000;
 }
 
-/* מצב יום (ברירת מחדל) */
-:root {
-    --bg-color: #ffffff;
-    --text-color: #111111;
-    --box-color: #f9f9f9;
-    --accent-color: #1976d2;
+body.light-mode .stApp {
+    background-color: #f7f7f7;
+    color: #000;
+}
+
+body.light-mode .stMarkdown, body.light-mode .stDataFrame {
+    color: #000000;
 }
 
 /* מצב לילה */
 body.dark-mode {
-    --bg-color: #121212;
-    --text-color: #eeeeee;
-    --box-color: #1e1e1e;
-    --accent-color: #90caf9;
+    background-color: #0e1117;
+    color: #ffffff;
 }
 
-body {
-    background-color: var(--bg-color);
-    color: var(--text-color);
+body.dark-mode .stApp {
+    background-color: #0e1117;
+    color: #fff;
 }
 
-.stApp {
-    background-color: var(--bg-color);
-    color: var(--text-color);
+body.dark-mode .stMarkdown, body.dark-mode .stDataFrame {
+    color: #ffffff;
 }
 
-div[data-testid="stMetric"] {
-    background-color: var(--box-color);
-    padding: 1em;
-    border-radius: 0.5em;
-    border: 1px solid #ccc;
-}
-
-button, .stButton>button {
-    background-color: var(--accent-color);
-    color: white;
+body.dark-mode .stButton>button {
+    background-color: #444;
+    color: #fff;
     border: none;
-    padding: 0.6em 1em;
-    border-radius: 0.4em;
-    cursor: pointer;
-    transition: background-color 0.3s;
 }
 
-button:hover, .stButton>button:hover {
-    background-color: #1565c0;
+body.light-mode .stButton>button {
+    background-color: #ededed;
+    color: #000;
+    border: none;
 }
 
-/* סרגל עליון אופציונלי */
-.toolbar {
-    display: flex;
-    justify-content: space-between;
-    background-color: var(--box-color);
-    padding: 10px 20px;
-    border-bottom: 1px solid #ccc;
+/* כפתור טוגל */
+.stSidebar [data-testid="stToggle"] {
+    margin-top: 20px;
+    font-weight: bold;
 }
 
-.toolbar h1 {
-    margin: 0;
-    font-size: 1.2em;
-    color: var(--text-color);
+/* כותרות */
+h1, h2, h3 {
+    font-family: 'Helvetica Neue', sans-serif;
+    font-weight: 700;
 }
 
-.toggle-dark {
-    cursor: pointer;
-    font-size: 0.9em;
-    color: var(--accent-color);
+/* טקסט רגיל */
+p {
+    font-family: 'Segoe UI', sans-serif;
+}
+
+/* בר תפריט */
+header {
+    visibility: hidden;
 }
