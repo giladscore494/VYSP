@@ -4,18 +4,15 @@ import os
 
 st.set_page_config(page_title="FstarVfootball – מדד YSP-75", layout="wide")
 
-# הגדרת toggle למצב יום/לילה
+# מצב לילה – סרגל צד
 dark_mode = st.sidebar.toggle("🌙 מצב לילה", value=False)
 
-# CSS ודגל למצב
+# CSS דינמי לפי מצב לילה
 css_path = os.path.join(os.path.dirname(__file__), "style.css")
-if os.path.exists(css_path):
-    with open(css_path, "r", encoding="utf-8") as f:
-        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-else:
-    st.warning("⚠️ הקובץ style.css לא נמצא בתיקייה.")
+with open(css_path, "r", encoding="utf-8") as f:
+    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-
+# החלפת class בגוף הדף
 toggle_class = "dark-mode" if dark_mode else "light-mode"
 st.markdown(f"""
     <script>
@@ -23,21 +20,7 @@ st.markdown(f"""
     </script>
 """, unsafe_allow_html=True)
 
-
-# JavaScript להוספת מחלקה לגוף הדף
-toggle_class = "dark-mode" if dark_mode else ""
-st.markdown(f"""
-    <script>
-    document.body.className = '{toggle_class}';
-    </script>
-""", unsafe_allow_html=True)
-
-
-# CSS חיצוני (מותאם: רק אם הקובץ קיים)
-if os.path.exists("style.css"):
-    with open("style.css", encoding="utf-8") as f:
-        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-
+# טעינת הנתונים
 @st.cache_data
 def load_data():
     path = os.path.join("ysp75-app", "players_simplified_2025.csv")
@@ -51,6 +34,7 @@ def load_club_data():
     df = pd.read_csv(path)
     df.columns = df.columns.str.strip()
     return df
+
 
 def match_text(query, text):
     parts = str(text).lower().split()
