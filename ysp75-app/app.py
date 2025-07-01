@@ -143,13 +143,14 @@ run_app(load_data(), load_club_data(), calculate_fit_score, match_text)
 # טעינת הממשק הראשי מתוך app_ui.py
 from app_ui import run_app
 run_app(load_data(), load_club_data(), calculate_fit_score, match_text)
+
 import streamlit as st
 import pandas as pd
 
 def run_app(df, clubs_df, calculate_fit_score, match_text):
-    st.title("FstarVfootball")  # ← זה מה ששינית
+    st.title("FstarVfootball")
 
-    player_query = st.text_input("הקלד שם שחקן (חלק מהשם):").strip().lower()
+    player_query = st.text_input("הקלד שם שחקן (חלק מהשם):", key="player_input").strip().lower()
     matching_players = df[df["Player"].apply(lambda name: match_text(player_query, name))]
 
     if player_query and not matching_players.empty:
@@ -161,12 +162,10 @@ def run_app(df, clubs_df, calculate_fit_score, match_text):
         st.write(f"דקות: {row['Min']} | גולים: {row['Gls']} | בישולים: {row['Ast']}")
         st.write(f"דריבלים מוצלחים: {row['Succ']} | מסירות מפתח: {row['KP']}")
 
-        # חישוב מדד YSP-75
         ysp_score = calculate_ysp_score(row)
         st.metric("מדד YSP-75", ysp_score)
 
-        # התאמה לקבוצה
-        club_query = st.text_input("הקלד שם קבוצה (חלק מהשם):").strip().lower()
+        club_query = st.text_input("הקלד שם קבוצה (חלק מהשם):", key="club_input").strip().lower()
         matching_clubs = [c for c in clubs_df["Club"].unique() if match_text(club_query, c)]
 
         if club_query and matching_clubs:
