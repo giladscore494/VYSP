@@ -1,4 +1,3 @@
-
 # FINAL FIX with row assignment added before subheader
 import streamlit as st
 import os
@@ -221,7 +220,16 @@ def calculate_ysp_score(row):
     return min(round(ysp_score, 2), 100)
 
 # ===== ממשק משתמש =====
-st.title("FstarVfootball")
+st.markdown("""
+<div style='text-align: right; font-size: 45px; font-weight: bold;
+background: linear-gradient(to right, #0057ff, #00c3ff); -webkit-background-clip: text;
+color: transparent; font-family:Arial Black'>
+FstarVfootball – מדד YSP-75
+</div>
+<div style='text-align: right; font-size: 16px; color: gray; margin-top: -10px'>
+מדד חכם לשחקנים צעירים + התאמה לקבוצות
+</div>
+""", unsafe_allow_html=True)
 
 player_query = st.text_input("הקלד שם שחקן (חלק מהשם):", key="player_input").strip().lower()
 df = load_data()
