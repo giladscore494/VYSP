@@ -1,3 +1,4 @@
+
 import streamlit as st
 import os
 import pandas as pd
@@ -25,7 +26,8 @@ def load_club_data():
     return df
 
 def match_text(query, text):
-    return query.lower() in str(text).lower()
+    parts = str(text).lower().split()
+    return any(query in part for part in parts)
 
 def calculate_fit_score(player_row, club_row):
     score = 0
@@ -219,16 +221,7 @@ def calculate_ysp_score(row):
     return min(round(ysp_score, 2), 100)
 
 # ===== ממשק משתמש =====
-st.markdown("""
-<div style='text-align: right; font-size: 45px; font-weight: bold;
-background: linear-gradient(to right, #0057ff, #00c3ff); -webkit-background-clip: text;
-color: transparent; font-family:Arial Black'>
-FstarVfootball
-</div>
-<div style='text-align: right; font-size: 16px; color: gray; margin-top: -10px'>
-מדד חכם לשחקנים צעירים + התאמה לקבוצות
-</div>
-""", unsafe_allow_html=True)
+st.title("FstarVfootball")
 
 player_query = st.text_input("הקלד שם שחקן (חלק מהשם):", key="player_input").strip().lower()
 df = load_data()
@@ -236,12 +229,9 @@ clubs_df = load_club_data()
 matching_players = df[df["Player"].apply(lambda name: match_text(player_query, name))]
 
 if player_query and not matching_players.empty:
-    if len(matching_players) == 1:
-        selected_player = matching_players["Player"].iloc[0]
-    else:
-        selected_player = st.selectbox("בחר שחקן מתוך תוצאות החיפוש:", matching_players["Player"].tolist())
-
+    selected_player = st.selectbox("בחר שחקן מתוך תוצאות החיפוש:", matching_players["Player"].tolist())
     row = df[df["Player"] == selected_player].iloc[0]
+
     st.subheader(f"שחקן: {row['Player']}")
     st.write(f"ליגה: {row['Comp']} | גיל: {row['Age']} | עמדה: {row['Pos']}")
     st.write(f"דקות: {row['Min']} | גולים: {row['Gls']} | בישולים: {row['Ast']}")
