@@ -4,9 +4,10 @@ import os
 
 st.set_page_config(page_title="FstarVfootball – מדד YSP-75", layout="wide")
 
-# CSS חיצוני
-with open("style.css") as f:
-    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+# CSS חיצוני (מותאם: רק אם הקובץ קיים)
+if os.path.exists("style.css"):
+    with open("style.css", encoding="utf-8") as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 @st.cache_data
 def load_data():
@@ -128,27 +129,74 @@ def calculate_fit_score(player_row, club_row):
     score += personal_score * weights["personal_style"]
 
     return round(min(score, 100), 2)
-# ממשק Streamlit – חלק שני
 
-df = load_data()
-clubs_df = load_club_data()
+# טעינת הממשק הראשי מתוך app_ui.py
+from app_ui import run_app
+run_app(load_data(), load_club_data(), calculate_fit_score, match_text)
+import streamlit as st
+import pandas as pd
 
-st.title("FstarVfootball – מדד YSP-75 + מדד התאמה לקבוצה")
+def run_app(df, clubs_df, calculate_fit_score, match_text):
+    st.title("FstarVfootball – מדד YSP-75 + מדד התאמה לקבוצה")
 
-player_query = st.text_input("הקלד שם שחקן (חלק מהשם):").strip().lower()
-matching_players = df[df["Player"].apply(lambda name: match_text(player_query, name))]
+    player_query = st.text_input("הקלד שם שחקן (חלק מהשם):").strip().lower()
+    matching_players = df[df["Player"].apply(lambda name: match_text(player_query, name))]
 
-if player_query and not matching_players.empty:
-    selected_player = st.selectbox("בחר שחקן מתוך תוצאות החיפוש:", matching_players["Player"].tolist())
-    row = df[df["Player"] == selected_player].iloc[0]
+    if player_query and not matching_players.empty:
+        selected_player = st.selectbox("בחר שחקן מתוך תוצאות החיפוש:", matching_players["Player"].tolist())
+        row = df[df["Player"] == selected_player].iloc[0]
 
-    st.subheader(f"שחקן: {row['Player']}")
-    st.write(f"ליגה: {row['Comp']} | גיל: {row['Age']} | עמדה: {row['Pos']}")
-    st.write(f"דקות: {row['Min']} | גולים: {row['Gls']} | בישולים: {row['Ast']}")
-    st.write(f"דריבלים מוצלחים: {row['Succ']} | מסירות מפתח: {row['KP']}")
+        st.subheader(f"שחקן: {row['Player']}")
+        st.write(f"ליגה: {row['Comp']} | גיל: {row['Age']} | עמדה: {row['Pos']}")
+        st.write(f"דקות: {row['Min']} | גולים: {row['Gls']} | בישולים: {row['Ast']}")
+        st.write(f"דריבלים מוצלחים: {row['Succ']} | מסירות מפתח: {row['KP']}")
 
-    # חישוב מדד YSP-75
-    ysp_score = 0
+        # חישוב מדד YSP-75
+        ysp_score = calculate_ysp_score(row)
+        st.metric("מדד YSP-75", ysp_score)
+
+        # התאמה לקבוצה
+        club_query = st.text_input("הקלד שם קבוצה (חלק מהשם):").strip().lower()
+        matching_clubs = [c for c in clubs_df["Club"].unique() if match_text(club_query, c)]
+
+        if club_query and matching_clubs:
+            selected_club = st.selectbox("בחר קבוצה מתוך התוצאות:", matching_clubs)
+            club_data = clubs_df[clubs_df["Club"] == selected_club]
+            if not club_data.empty:
+                club_row = club_data.iloc[0]
+                fit_score = calculate_fit_score(player_row=row, club_row=club_row)
+                st.metric("רמת התאמה חזויה לקבוצה", f"{fit_score}%")
+                if fit_score >= 85:
+                    st.success("התאמה מצוינת – סביר שיצליח במערכת הזו.")
+                elif fit_score >= 70:
+                    st.info("התאמה סבירה – עשוי להסתגל היטב.")
+                else:
+                    st.warning("התאמה נמוכה – דרושה התאמה טקטית או סבלנות.")
+        elif club_query:
+            st.warning("לא נמצאו קבוצות תואמות.")
+
+        with st.expander("🔍 בדוק התאמה של השחקן מול כל הקבוצות במערכת"):
+            if st.button("חשב התאמה לכל הקבוצות"):
+                scores = []
+                for i, club_row in clubs_df.iterrows():
+                    score = calculate_fit_score(player_row=row, club_row=club_row)
+                    scores.append((club_row["Club"], score))
+
+                top_scores = sorted(scores, key=lambda x: x[1], reverse=True)[:10]
+                top_df = pd.DataFrame(top_scores, columns=["Club", "Fit Score"])
+
+                st.subheader("📊 10 הקבוצות המתאימות ביותר לשחקן")
+                st.bar_chart(top_df.set_index("Club"))
+
+                csv = pd.DataFrame(scores, columns=["Club", "Fit Score"]).to_csv(index=False).encode('utf-8')
+                st.download_button("📥 הורד את כל ההתאמות כ־CSV", data=csv, file_name=f"{row['Player']}_club_fits.csv", mime='text/csv')
+    else:
+        if player_query:
+            st.warning("שחקן לא נמצא. נסה שם מדויק או חלק ממנו.")
+
+    st.caption("הנתונים מבוססים על ניתוח אלגוריתמי לצרכים חינוכיים ואנליטיים בלבד.")
+
+def calculate_ysp_score(row):
     position = str(row["Pos"])
     minutes = row["Min"]
     goals = row["Gls"]
@@ -177,6 +225,7 @@ if player_query and not matching_players.empty:
         "fr Ligue 1": 0.93
     }
 
+    ysp_score = 0
     if "GK" in position:
         bm = benchmarks["GK"]
         ysp_score = (
@@ -233,47 +282,4 @@ if player_query and not matching_players.empty:
 
     league_weight = league_weights.get(league.strip(), 0.9)
     ysp_score *= league_weight
-    ysp_score = min(round(ysp_score, 2), 100)
-
-    st.metric("מדד YSP-75", ysp_score)
-
-    # התאמה לקבוצה
-    club_query = st.text_input("הקלד שם קבוצה (חלק מהשם):").strip().lower()
-    matching_clubs = [c for c in clubs_df["Club"].unique() if match_text(club_query, c)]
-
-    if club_query and matching_clubs:
-        selected_club = st.selectbox("בחר קבוצה מתוך התוצאות:", matching_clubs)
-        club_data = clubs_df[clubs_df["Club"] == selected_club]
-        if not club_data.empty:
-            club_row = club_data.iloc[0]
-            fit_score = calculate_fit_score(player_row=row, club_row=club_row)
-            st.metric("רמת התאמה חזויה לקבוצה", f"{fit_score}%")
-            if fit_score >= 85:
-                st.success("התאמה מצוינת – סביר שיצליח במערכת הזו.")
-            elif fit_score >= 70:
-                st.info("התאמה סבירה – עשוי להסתגל היטב.")
-            else:
-                st.warning("התאמה נמוכה – דרושה התאמה טקטית או סבלנות.")
-    elif club_query:
-        st.warning("לא נמצאו קבוצות תואמות.")
-
-    with st.expander("🔍 בדוק התאמה של השחקן מול כל הקבוצות במערכת"):
-        if st.button("חשב התאמה לכל הקבוצות"):
-            scores = []
-            for i, club_row in clubs_df.iterrows():
-                score = calculate_fit_score(player_row=row, club_row=club_row)
-                scores.append((club_row["Club"], score))
-
-            top_scores = sorted(scores, key=lambda x: x[1], reverse=True)[:10]
-            top_df = pd.DataFrame(top_scores, columns=["Club", "Fit Score"])
-
-            st.subheader("📊 10 הקבוצות המתאימות ביותר לשחקן")
-            st.bar_chart(top_df.set_index("Club"))
-
-            csv = pd.DataFrame(scores, columns=["Club", "Fit Score"]).to_csv(index=False).encode('utf-8')
-            st.download_button("📥 הורד את כל ההתאמות כ־CSV", data=csv, file_name=f"{row['Player']}_club_fits.csv", mime='text/csv')
-else:
-    if player_query:
-        st.warning("שחקן לא נמצא. נסה שם מדויק או חלק ממנו.")
-
-st.caption("הנתונים מבוססים על ניתוח אלגוריתמי לצרכים חינוכיים ואנליטיים בלבד.")
+    return min(round(ysp_score, 2), 100)
