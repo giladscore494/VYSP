@@ -4,17 +4,9 @@ import pandas as pd
 
 st.set_page_config(page_title="FstarVfootball – מדד YSP-75", layout="wide")
 
-# מצב לילה
-dark_mode = st.sidebar.toggle("🌙 מצב לילה", value=False)
-toggle_class = "dark-mode" if dark_mode else "light-mode"
-
-# CSS
 css_path = os.path.join(os.path.dirname(__file__), "style.css")
 with open(css_path, "r", encoding="utf-8") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-
-# עטיפת כל האלמנטים ב-class הנכון
-st.markdown(f'<div class="{toggle_class}">', unsafe_allow_html=True)
 
 # טעינת הנתונים
 @st.cache_data
@@ -292,5 +284,5 @@ def calculate_ysp_score(row):
     league_weight = league_weights.get(league.strip(), 0.9)
     ysp_score *= league_weight
     return min(round(ysp_score, 2), 100)
-st.markdown("</div>", unsafe_allow_html=True)
+
 
