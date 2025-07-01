@@ -1,5 +1,4 @@
-
-# FINAL INDENT FIX – 100% working
+# FINAL FIX with full working if-else block
 import streamlit as st
 import os
 import pandas as pd
@@ -233,9 +232,6 @@ if player_query and not matching_players.empty:
         selected_player = matching_players["Player"].iloc[0]
     else:
         selected_player = st.selectbox("בחר שחקן מתוך תוצאות החיפוש:", matching_players["Player"].tolist())
-    else:
-        selected_player = st.selectbox("בחר שחקן מתוך תוצאות החיפוש:", matching_players["Player"].tolist())
-    row = df[df["Player"] == selected_player].iloc[0]
 
     st.subheader(f"שחקן: {row['Player']}")
     st.write(f"ליגה: {row['Comp']} | גיל: {row['Age']} | עמדה: {row['Pos']}")
