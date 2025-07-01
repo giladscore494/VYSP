@@ -1,9 +1,11 @@
 import streamlit as st
 import os
-import pandas as pd
 import requests
 
-# Page config
+# מייבא את פונקציית get_players_data מ־players-data.py
+from players_data import get_players_data  
+
+# הגדרת עמוד
 st.set_page_config(page_title="FstarVfootball with API", layout="wide")
 
 API_KEY = os.getenv("API_FOOTBALL_KEY")
@@ -11,10 +13,8 @@ HEADERS = {"x-apisports-key": API_KEY}
 
 @st.cache_data
 def load_data():
-    path = os.path.join("ysp75-app", "players_simplified_2025.csv")
-    df = pd.read_csv(path)
-    df.columns = df.columns.str.strip()
-    return df
+    # שימוש בפונקציה המייבאת נתונים מפייתון במקום קובץ CSV
+    return get_players_data()
 
 @st.cache_data
 def load_club_data():
@@ -27,8 +27,9 @@ def fetch_player_stats_from_api(player_id, league_id=39, season=2023):
     url = "https://v3.football.api-sports.io/players"
     params = {"id": player_id, "league": league_id, "season": season}
     response = requests.get(url, headers=HEADERS, params=params)
+    st.write(f"API call for player_id={player_id} returned status {response.status_code}")
     if response.status_code != 200:
-        st.error(f"Error fetching player data: {response.status_code}")
+        st.error(f"שגיאה בשליפת נתוני שחקן: {response.status_code}")
         return None
     data = response.json()
     if data["response"]:
@@ -112,8 +113,8 @@ def calculate_ysp_score_from_data(position, minutes, goals, assists, dribbles, k
     ysp_score *= league_weight
     return min(round(ysp_score, 2), 100)
 
-# Dummy function for fit score, replace with your logic
 def calculate_fit_score(player_row, club_row):
+    # TODO: הוסף כאן את פונקציית ההתאמה שלך
     pass
 
 def match_text(query, text):
@@ -137,7 +138,8 @@ def run_player_search():
         player_row = df[df["Player"] == selected_player].iloc[0]
 
         player_id_api = player_row.get("Player_ID_API", None)
-        league_id = 39  # example: Premier League
+        st.write(f"Player API ID: {player_id_api}")
+        league_id = 39  # example Premier League
         season = 2023
 
         ysp_score = None
@@ -209,14 +211,14 @@ def run_player_search():
 
     st.caption("Data based on algorithmic analysis for educational and analytical use only.")
 
-# Menu for modes
+# תפריט מצבים
 mode = st.sidebar.radio("Select mode:", ("Player Search", "Forecast Analysis", "Search History"))
 
 if mode == "Player Search":
     run_player_search()
 elif mode == "Forecast Analysis":
-    # Your forecast analysis function here
+    # הפעל את פונקציית ניתוח התחזיות שלך כאן
     pass
 elif mode == "Search History":
-    # Your search history function here
+    # הפעל את פונקציית היסטוריית החיפושים שלך כאן
     pass
