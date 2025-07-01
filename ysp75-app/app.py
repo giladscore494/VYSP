@@ -1,4 +1,5 @@
-# FINAL FIX with full working if-else block
+
+# FINAL FIX with row assignment added before subheader
 import streamlit as st
 import os
 import pandas as pd
@@ -233,6 +234,7 @@ if player_query and not matching_players.empty:
     else:
         selected_player = st.selectbox("בחר שחקן מתוך תוצאות החיפוש:", matching_players["Player"].tolist())
 
+    row = df[df["Player"] == selected_player].iloc[0]
     st.subheader(f"שחקן: {row['Player']}")
     st.write(f"ליגה: {row['Comp']} | גיל: {row['Age']} | עמדה: {row['Pos']}")
     st.write(f"דקות: {row['Min']} | גולים: {row['Gls']} | בישולים: {row['Ast']}")
