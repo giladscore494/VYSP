@@ -3,8 +3,8 @@ import os
 import pandas as pd
 import requests
 
-# הגדרת עמוד
-st.set_page_config(page_title="FstarVfootball עם חיבור API", layout="wide")
+# Page config
+st.set_page_config(page_title="FstarVfootball with API", layout="wide")
 
 API_KEY = os.getenv("API_FOOTBALL_KEY")
 HEADERS = {"x-apisports-key": API_KEY}
@@ -28,7 +28,7 @@ def fetch_player_stats_from_api(player_id, league_id=39, season=2023):
     params = {"id": player_id, "league": league_id, "season": season}
     response = requests.get(url, headers=HEADERS, params=params)
     if response.status_code != 200:
-        st.error(f"שגיאה בשליפת נתוני שחקן: {response.status_code}")
+        st.error(f"Error fetching player data: {response.status_code}")
         return None
     data = response.json()
     if data["response"]:
@@ -112,9 +112,8 @@ def calculate_ysp_score_from_data(position, minutes, goals, assists, dribbles, k
     ysp_score *= league_weight
     return min(round(ysp_score, 2), 100)
 
-# תחליף את זה בקוד שלך או השאר אם תרצה
+# Dummy function for fit score, replace with your logic
 def calculate_fit_score(player_row, club_row):
-    # TODO: להכניס כאן את פונקציית ההתאמה המלאה שלך
     pass
 
 def match_text(query, text):
@@ -126,19 +125,19 @@ def run_player_search():
     df = load_data()
     clubs_df = load_club_data()
 
-    player_query = st.text_input("הקלד שם שחקן (חלק מהשם):", key="player_input").strip().lower()
+    player_query = st.text_input("Enter player name (partial):", key="player_input").strip().lower()
     matching_players = df[df["Player"].apply(lambda name: match_text(player_query, name))]
 
     if player_query and not matching_players.empty:
         if len(matching_players) == 1:
             selected_player = matching_players["Player"].iloc[0]
         else:
-            selected_player = st.selectbox("בחר שחקן מתוך תוצאות החיפוש:", matching_players["Player"].tolist())
+            selected_player = st.selectbox("Select player from results:", matching_players["Player"].tolist())
 
         player_row = df[df["Player"] == selected_player].iloc[0]
 
         player_id_api = player_row.get("Player_ID_API", None)
-        league_id = 39  # לדוגמה, פרמייר ליג
+        league_id = 39  # example: Premier League
         season = 2023
 
         ysp_score = None
@@ -179,47 +178,45 @@ def run_player_search():
                 player_row["Comp"]
             )
 
-        st.metric("מדד YSP", ysp_score)
+        st.metric("YSP Score", ysp_score)
 
-        st.subheader(f"שחקן: {player_row['Player']}")
-        st.write(f"ליגה: {player_row['Comp']} | גיל: {player_row['Age']} | עמדה: {player_row['Pos']}")
-        st.write(f"דקות: {player_row['Min']} | גולים: {player_row['Gls']} | בישולים: {player_row['Ast']}")
-        st.write(f"דריבלים מוצלחים: {player_row['Succ']} | מסירות מפתח: {player_row['KP']}")
+        st.subheader(f"Player: {player_row['Player']}")
+        st.write(f"League: {player_row['Comp']} | Age: {player_row['Age']} | Position: {player_row['Pos']}")
+        st.write(f"Minutes: {player_row['Min']} | Goals: {player_row['Gls']} | Assists: {player_row['Ast']}")
+        st.write(f"Successful Dribbles: {player_row['Succ']} | Key Passes: {player_row['KP']}")
 
-        club_query = st.text_input("הקלד שם קבוצה (חלק מהשם):", key="club_input").strip().lower()
+        club_query = st.text_input("Enter club name (partial):", key="club_input").strip().lower()
         matching_clubs = [c for c in clubs_df["Club"].unique() if match_text(club_query, c)]
 
         if club_query and matching_clubs:
-            selected_club = st.selectbox("בחר קבוצה מתוך התוצאות:", matching_clubs)
+            selected_club = st.selectbox("Select club from results:", matching_clubs)
             club_data = clubs_df[clubs_df["Club"] == selected_club]
             if not club_data.empty:
                 club_row = club_data.iloc[0]
                 fit_score = calculate_fit_score(player_row=player_row, club_row=club_row)
-                st.metric("רמת התאמה חזויה לקבוצה", f"{fit_score}%")
+                st.metric("Predicted fit to club", f"{fit_score}%")
                 if fit_score >= 85:
-                    st.success("התאמה מצוינת – סביר שיצליח במערכת הזו.")
+                    st.success("Excellent fit - likely to succeed in this system.")
                 elif fit_score >= 70:
-                    st.info("התאמה סבירה – עשוי להסתגל היטב.")
+                    st.info("Moderate fit - may adapt well.")
                 else:
-                    st.warning("התאמה נמוכה – דרושה התאמה טקטית או סבלנות.")
+                    st.warning("Low fit - tactical adjustment or patience required.")
         elif club_query:
-            st.warning("לא נמצאו קבוצות תואמות.")
+            st.warning("No matching clubs found.")
     else:
         if player_query:
-            st.warning("שחקן לא נמצא. נסה שם מדויק או חלק ממנו.")
+            st.warning("Player not found. Try exact or partial name.")
 
-    st.caption("הנתונים מבוססים על ניתוח אלגוריתמי לצרכים חינוכיים ואנליטיים בלבד.")
+    st.caption("Data based on algorithmic analysis for educational and analytical use only.")
 
-# כאן תוכל להוסיף פונקציות נוספות שלך כמו ניתוח תחזיות, היסטוריית חיפושים וכו'.
+# Menu for modes
+mode = st.sidebar.radio("Select mode:", ("Player Search", "Forecast Analysis", "Search History"))
 
-# תפריט בחירת מצב
-mode = st.sidebar.radio("בחר מצב:", ("חיפוש שחקנים", "ניתוח תחזיות", "היסטוריית חיפושים"))
-
-if mode == "חיפוש שחקנים":
+if mode == "Player Search":
     run_player_search()
-elif mode == "ניתוח תחזיות":
-    # כאן תפעיל את פונקציית ניתוח התחזיות שלך
+elif mode == "Forecast Analysis":
+    # Your forecast analysis function here
     pass
-elif mode == "היסטוריית חיפושים":
-    # כאן תפעיל את פונקציית היסטוריית החיפושים שלך
+elif mode == "Search History":
+    # Your search history function here
     pass
