@@ -2,7 +2,7 @@ import streamlit as st
 import os
 import pandas as pd
 
-st.set_page_config(page_title="FstarVfootball – מדד YSP-75", layout="wide")
+st.set_page_config(page_title="FstarVfootball", layout="wide")
 
 css_path = os.path.join(os.path.dirname(__file__), "style.css")
 with open(css_path, "r", encoding="utf-8") as f:
