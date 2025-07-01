@@ -9,8 +9,9 @@ dark_mode = st.sidebar.toggle("🌙 מצב לילה", value=False)
 
 # CSS ודגל למצב
 with open("style.css") as f:
-    css = f.read()
-    st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
+    css_path = os.path.join(os.path.dirname(__file__), "style.css")
+with open(css_path, "r", encoding="utf-8") as f:
+    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 # JavaScript להוספת מחלקה לגוף הדף
 toggle_class = "dark-mode" if dark_mode else ""
