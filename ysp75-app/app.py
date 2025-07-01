@@ -219,12 +219,15 @@ def calculate_ysp_score(row):
     ysp_score *= league_weight
     return min(round(ysp_score, 2), 100)
 
-# הגדרת נתיב להיסטוריית חיפושים
 SEARCH_HISTORY_FILE = os.path.join("ysp75-app", "search_history.csv")
 
-def save_search(player_name):
+def save_search(player_name, ysp_score):
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    new_entry = pd.DataFrame([{"Player": player_name, "Timestamp": now}])
+    new_entry = pd.DataFrame([{
+        "Player": player_name,
+        "YSP_Score": ysp_score,
+        "Timestamp": now
+    }])
 
     if os.path.exists(SEARCH_HISTORY_FILE):
         history_df = pd.read_csv(SEARCH_HISTORY_FILE)
@@ -240,10 +243,10 @@ def show_search_history():
     if os.path.exists(SEARCH_HISTORY_FILE):
         history_df = pd.read_csv(SEARCH_HISTORY_FILE)
 
-        counts = history_df.groupby("Player").size().reset_index(name="מספר חיפושים")
+        counts = history_df.groupby(["Player", "YSP_Score"]).size().reset_index(name="מספר חיפושים")
         counts = counts.sort_values(by="מספר חיפושים", ascending=False)
 
-        st.subheader("מספר חיפושים לפי שחקן")
+        st.subheader("מספר חיפושים לפי שחקן וציוני YSP")
         st.dataframe(counts)
 
         if st.checkbox("הצג טבלת היסטוריה מפורטת"):
@@ -267,18 +270,18 @@ def run_player_search():
         else:
             selected_player = st.selectbox("בחר שחקן מתוך תוצאות החיפוש:", matching_players["Player"].tolist())
 
-        # שמירת החיפוש להיסטוריה
-        save_search(selected_player)
-
         row = df[df["Player"] == selected_player].iloc[0]
+
+        ysp_score = calculate_ysp_score(row)
+        st.metric("מדד YSP-75", ysp_score)
+
+        # שמירת החיפוש עם הציון
+        save_search(selected_player, ysp_score)
 
         st.subheader(f"שחקן: {row['Player']}")
         st.write(f"ליגה: {row['Comp']} | גיל: {row['Age']} | עמדה: {row['Pos']}")
         st.write(f"דקות: {row['Min']} | גולים: {row['Gls']} | בישולים: {row['Ast']}")
         st.write(f"דריבלים מוצלחים: {row['Succ']} | מסירות מפתח: {row['KP']}")
-
-        ysp_score = calculate_ysp_score(row)
-        st.metric("מדד YSP-75", ysp_score)
 
         club_query = st.text_input("הקלד שם קבוצה (חלק מהשם):", key="club_input").strip().lower()
         matching_clubs = [c for c in clubs_df["Club"].unique() if match_text(club_query, c)]
@@ -366,7 +369,6 @@ def forecast_analysis():
     csv_data = forecast_df.to_csv(index=False).encode("utf-8")
     st.download_button("📥 הורד דו\"ח תחזיות כ־CSV", data=csv_data, file_name="forecast_report.csv", mime="text/csv")
 
-    # הצגת היסטוריה שמורה
     if st.checkbox("הצג היסטוריית תחזיות קודמות"):
         if os.path.exists(HISTORY_FILE):
             history_df = pd.read_csv(HISTORY_FILE)
