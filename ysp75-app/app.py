@@ -1,6 +1,7 @@
 import streamlit as st
 import os
 import pandas as pd
+from app_ui import run_app
 
 # הגדרות עמוד
 st.set_page_config(page_title="FstarVfootball", layout="wide")
@@ -10,7 +11,6 @@ css_path = os.path.join(os.path.dirname(__file__), "style.css")
 with open(css_path, "r", encoding="utf-8") as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-# טעינת הנתונים
 @st.cache_data
 def load_data():
     path = os.path.join("ysp75-app", "players_simplified_2025.csv")
@@ -18,14 +18,12 @@ def load_data():
     df.columns = df.columns.str.strip()
     return df
 
-
 @st.cache_data
 def load_club_data():
     path = os.path.join("ysp75-app", "Updated_Club_Tactical_Dataset.csv")
     df = pd.read_csv(path)
     df.columns = df.columns.str.strip()
     return df
-
 
 def match_text(query, text):
     parts = str(text).lower().split()
@@ -134,17 +132,17 @@ def calculate_fit_score(player_row, club_row):
 
     return round(min(score, 100), 2)
 
+# טעינת הממשק הראשי
+run_app(load_data(), load_club_data(), calculate_fit_score, match_text)
+
 # טעינת הממשק הראשי מתוך app_ui.py
 from app_ui import run_app
 run_app(load_data(), load_club_data(), calculate_fit_score, match_text)
-
-
-# בתוך app_ui.py
 import streamlit as st
 import pandas as pd
 
 def run_app(df, clubs_df, calculate_fit_score, match_text):
-    st.title("FstarVfootball")  # ← שורת הכותרת שונתה לפי בקשתך
+    st.title("FstarVfootball")  # ← זה מה ששינית
 
     player_query = st.text_input("הקלד שם שחקן (חלק מהשם):").strip().lower()
     matching_players = df[df["Player"].apply(lambda name: match_text(player_query, name))]
@@ -158,9 +156,11 @@ def run_app(df, clubs_df, calculate_fit_score, match_text):
         st.write(f"דקות: {row['Min']} | גולים: {row['Gls']} | בישולים: {row['Ast']}")
         st.write(f"דריבלים מוצלחים: {row['Succ']} | מסירות מפתח: {row['KP']}")
 
+        # חישוב מדד YSP-75
         ysp_score = calculate_ysp_score(row)
         st.metric("מדד YSP-75", ysp_score)
 
+        # התאמה לקבוצה
         club_query = st.text_input("הקלד שם קבוצה (חלק מהשם):").strip().lower()
         matching_clubs = [c for c in clubs_df["Club"].unique() if match_text(club_query, c)]
 
@@ -200,7 +200,6 @@ def run_app(df, clubs_df, calculate_fit_score, match_text):
             st.warning("שחקן לא נמצא. נסה שם מדויק או חלק ממנו.")
 
     st.caption("הנתונים מבוססים על ניתוח אלגוריתמי לצרכים חינוכיים ואנליטיים בלבד.")
-
 
 def calculate_ysp_score(row):
     position = str(row["Pos"])
