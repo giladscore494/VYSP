@@ -1,48 +1,66 @@
-body.light-mode {
+/* בסיס */
+body {
+    font-family: "Segoe UI", sans-serif;
+}
+
+/* מצב יום */
+.light-mode {
+    background-color: #f5f5f5;
+    color: #000000;
+}
+
+.light-mode .stApp {
+    background-color: #f5f5f5;
+    color: #000000;
+}
+
+.light-mode .stTextInput input,
+.light-mode .stSelectbox div,
+.light-mode .stButton>button {
     background-color: #ffffff;
-    color: #000000;
+    color: #000;
+    border: 1px solid #ccc;
 }
 
-body.dark-mode {
+.light-mode .stMetric {
+    background-color: #eaeaea;
+    color: #000;
+}
+
+.light-mode .css-1v0mbdj svg {
+    stroke: black !important;
+}
+
+/* מצב לילה */
+.dark-mode {
     background-color: #0e1117;
     color: #ffffff;
 }
 
-body.dark-mode .stApp {
+.dark-mode .stApp {
     background-color: #0e1117;
-    color: #fff;
-}
-
-body.light-mode .stApp {
-    background-color: #f7f7f7;
-    color: #000;
-}
-
-body.dark-mode .stMarkdown, body.dark-mode .stDataFrame {
     color: #ffffff;
 }
 
-body.light-mode .stMarkdown, body.light-mode .stDataFrame {
-    color: #000000;
+.dark-mode .stTextInput input,
+.dark-mode .stSelectbox div,
+.dark-mode .stButton>button {
+    background-color: #1e222c;
+    color: #ffffff;
+    border: 1px solid #444;
 }
 
-body.dark-mode .stButton>button {
-    background-color: #444;
-    color: #fff;
-    border: none;
+.dark-mode .stMetric {
+    background-color: #22252c;
+    color: #ffffff;
 }
 
-body.light-mode .stButton>button {
-    background-color: #ededed;
-    color: #000;
-    border: none;
+.dark-mode .css-1v0mbdj svg {
+    stroke: white !important;
 }
 
-h1, h2, h3 {
-    font-family: 'Helvetica Neue', sans-serif;
-    font-weight: 700;
-}
-
-p {
-    font-family: 'Segoe UI', sans-serif;
+/* התאמה לגרפים */
+.dark-mode .element-container svg {
+    background-color: transparent !important;
+    color: white !important;
 }
