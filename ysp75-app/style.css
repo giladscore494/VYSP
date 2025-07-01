@@ -1,0 +1,67 @@
+/* עיצוב כללי */
+body {
+    font-family: Arial, sans-serif;
+}
+
+.stButton>button {
+    background-color: #003366;
+    color: white;
+    border-radius: 12px;
+    padding: 10px 20px;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+.stButton>button:hover {
+    background-color: #005599;
+}
+
+h1, h2, h3 {
+    color: #003366;
+}
+
+.metric-label {
+    font-size: 20px;
+    font-weight: bold;
+    color: #444;
+}
+
+.metric-value {
+    font-size: 28px;
+    color: #0077cc;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+/* התראות */
+.stAlert {
+    border-radius: 12px;
+    padding: 16px;
+    font-size: 15px;
+}
+
+/* כרטיסים */
+.css-1siy2j7 {
+    background-color: #ffffff;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* כותרות טבלה */
+thead tr th {
+    background-color: #003366;
+    color: white;
+    font-weight: bold;
+}
+
+/* טבלה כללית */
+table {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* פסקה רגילה */
+p {
+    font-size: 14px;
+    color: #333;
+}
