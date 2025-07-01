@@ -16,6 +16,14 @@ else:
     st.warning("⚠️ הקובץ style.css לא נמצא בתיקייה.")
 
 
+toggle_class = "dark-mode" if dark_mode else "light-mode"
+st.markdown(f"""
+    <script>
+        document.body.className = '{toggle_class}';
+    </script>
+""", unsafe_allow_html=True)
+
+
 # JavaScript להוספת מחלקה לגוף הדף
 toggle_class = "dark-mode" if dark_mode else ""
 st.markdown(f"""
