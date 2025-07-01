@@ -26,8 +26,7 @@ def load_club_data():
     return df
 
 def match_text(query, text):
-    parts = str(text).lower().split()
-    return any(query in part for part in parts)
+    return query.lower() in str(text).lower()
 
 def calculate_fit_score(player_row, club_row):
     score = 0
@@ -229,7 +228,10 @@ clubs_df = load_club_data()
 matching_players = df[df["Player"].apply(lambda name: match_text(player_query, name))]
 
 if player_query and not matching_players.empty:
-    selected_player = st.selectbox("בחר שחקן מתוך תוצאות החיפוש:", matching_players["Player"].tolist())
+        if len(matching_players) == 1:
+        selected_player = matching_players["Player"].iloc[0]
+    else:
+        selected_player = st.selectbox("בחר שחקן מתוך תוצאות החיפוש:", matching_players["Player"].tolist())
     row = df[df["Player"] == selected_player].iloc[0]
 
     st.subheader(f"שחקן: {row['Player']}")
