@@ -1,88 +1,73 @@
 /* עיצוב כללי */
 body {
-    direction: rtl;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: "Segoe UI", sans-serif;
+    transition: background-color 0.3s, color 0.3s;
 }
 
-/* יישור כל הטקסט לימין */
-html, body, .css-1d391kg, .stApp {
-    direction: rtl;
-    text-align: right;
+/* מצב יום (ברירת מחדל) */
+:root {
+    --bg-color: #ffffff;
+    --text-color: #111111;
+    --box-color: #f9f9f9;
+    --accent-color: #1976d2;
 }
 
-/* כותרת ראשית */
-h1 {
-    color: #004080;
-    text-align: right;
-    font-size: 2.5em;
-    font-weight: bold;
+/* מצב לילה */
+body.dark-mode {
+    --bg-color: #121212;
+    --text-color: #eeeeee;
+    --box-color: #1e1e1e;
+    --accent-color: #90caf9;
 }
 
-/* תתי-כותרת */
-h2, h3 {
-    color: #003366;
-    text-align: right;
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
 }
 
-/* טקסט כללי */
-p {
-    font-size: 1.1em;
-    color: #333333;
+.stApp {
+    background-color: var(--bg-color);
+    color: var(--text-color);
 }
 
-/* תיבת metric */
-.css-1ht1j8u {
-    background-color: #f0f8ff;
-    border: 1px solid #b0c4de;
-    border-radius: 10px;
-    padding: 10px;
+div[data-testid="stMetric"] {
+    background-color: var(--box-color);
+    padding: 1em;
+    border-radius: 0.5em;
+    border: 1px solid #ccc;
 }
 
-/* כפתורים */
-button {
-    background-color: #004080 !important;
-    color: white !important;
-    border-radius: 6px !important;
-    padding: 10px 20px !important;
+button, .stButton>button {
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 0.6em 1em;
+    border-radius: 0.4em;
+    cursor: pointer;
+    transition: background-color 0.3s;
 }
 
-/* Expander */
-.css-1v0mbdj .streamlit-expanderHeader {
-    font-weight: bold;
-    background-color: #e6f2ff;
-    border-bottom: 1px solid #cce0ff;
+button:hover, .stButton>button:hover {
+    background-color: #1565c0;
 }
 
-/* תיבת אזהרה / מידע */
-.stAlert {
-    direction: rtl !important;
+/* סרגל עליון אופציונלי */
+.toolbar {
+    display: flex;
+    justify-content: space-between;
+    background-color: var(--box-color);
+    padding: 10px 20px;
+    border-bottom: 1px solid #ccc;
 }
 
-/* טופס קלט */
-.css-1cpxqw2 {
-    text-align: right !important;
+.toolbar h1 {
+    margin: 0;
+    font-size: 1.2em;
+    color: var(--text-color);
 }
 
-/* תיבת טקסט קלט */
-.css-qrbaxs, .css-13sdm1e {
-    text-align: right !important;
-    direction: rtl !important;
-}
-
-/* גרפים */
-.css-1avcm0n {
-    direction: ltr; /* ברירת מחדל לגרפים באנגלית */
-}
-
-/* טבלה */
-table {
-    direction: rtl;
-    text-align: right;
-}
-
-/* כפתור הורדה */
-.stDownloadButton > button {
-    background-color: #0a3d62;
-    color: #ffffff;
-    font-weight: bold;
+.toggle-dark {
+    cursor: pointer;
+    font-size: 0.9em;
+    color: var(--accent-color);
 }
