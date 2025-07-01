@@ -2,12 +2,9 @@ import streamlit as st
 import pandas as pd
 import os
 
-# טען CSS
-def local_css(file_name):
-    with open(file_name) as f:
-        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-
-local_css("ysp75-app/styles.css")
+# החלת CSS של מצב כהה
+with open(os.path.join("ysp75-app", "styles_dark.css")) as f:
+    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 @st.cache_data
 def load_data():
@@ -130,7 +127,7 @@ def calculate_fit_score(player_row, club_row):
 
     return round(min(score, 100), 2)
 
-# --- MAIN APP ---
+# ממשק Streamlit
 
 df = load_data()
 clubs_df = load_club_data()
@@ -270,12 +267,12 @@ if player_query and not matching_players.empty:
 
             top_scores = sorted(scores, key=lambda x: x[1], reverse=True)[:10]
             top_df = pd.DataFrame(top_scores, columns=["Club", "Fit Score"])
+
             st.subheader("📊 10 הקבוצות המתאימות ביותר לשחקן")
             st.bar_chart(top_df.set_index("Club"))
 
             csv = pd.DataFrame(scores, columns=["Club", "Fit Score"]).to_csv(index=False).encode('utf-8')
             st.download_button("📥 הורד את כל ההתאמות כ־CSV", data=csv, file_name=f"{row['Player']}_club_fits.csv", mime='text/csv')
-
 else:
     if player_query:
         st.warning("שחקן לא נמצא. נסה שם מדויק או חלק ממנו.")
