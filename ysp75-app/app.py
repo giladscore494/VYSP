@@ -1,3 +1,4 @@
+
 import streamlit as st
 import os
 import pandas as pd
@@ -131,6 +132,10 @@ def calculate_fit_score(player_row, club_row):
     score += personal_score * weights["personal_style"]
 
     return round(min(score, 100), 2)
+
+# טעינת הממשק הראשי מתוך app_ui.py
+from app_ui import run_app
+run_app(load_data(), load_club_data(), calculate_fit_score, match_text)
 
 # טעינת הממשק הראשי
 run_app(load_data(), load_club_data(), calculate_fit_score, match_text)
