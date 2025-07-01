@@ -266,6 +266,22 @@ def run_player_search():
                     st.warning("התאמה נמוכה – דרושה התאמה טקטית או סבלנות.")
         elif club_query:
             st.warning("לא נמצאו קבוצות תואמות.")
+        
+        # הוספת החלק להצגת 10 המועדונים המתאימים ביותר
+        st.markdown("---")
+        st.subheader("📊 10 המועדונים המתאימים ביותר לשחקן")
+        scores = []
+        for i, club_row in clubs_df.iterrows():
+            score = calculate_fit_score(player_row=row, club_row=club_row)
+            scores.append((club_row["Club"], score))
+        scores.sort(key=lambda x: x[1], reverse=True)
+        top_scores = scores[:10]
+        top_df = pd.DataFrame(top_scores, columns=["Club", "Fit Score"])
+
+        st.bar_chart(top_df.set_index("Club"))
+        csv = top_df.to_csv(index=False).encode('utf-8')
+        st.download_button("📥 הורד את כל ההתאמות כ־CSV", data=csv, file_name=f"{row['Player']}_club_fits.csv", mime='text/csv')
+
     else:
         if player_query:
             st.warning("שחקן לא נמצא. נסה שם מדויק או חלק ממנו.")
