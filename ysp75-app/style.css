@@ -1,19 +1,8 @@
-/* מצב יום */
 body.light-mode {
     background-color: #ffffff;
     color: #000000;
 }
 
-body.light-mode .stApp {
-    background-color: #f7f7f7;
-    color: #000;
-}
-
-body.light-mode .stMarkdown, body.light-mode .stDataFrame {
-    color: #000000;
-}
-
-/* מצב לילה */
 body.dark-mode {
     background-color: #0e1117;
     color: #ffffff;
@@ -24,8 +13,17 @@ body.dark-mode .stApp {
     color: #fff;
 }
 
+body.light-mode .stApp {
+    background-color: #f7f7f7;
+    color: #000;
+}
+
 body.dark-mode .stMarkdown, body.dark-mode .stDataFrame {
     color: #ffffff;
+}
+
+body.light-mode .stMarkdown, body.light-mode .stDataFrame {
+    color: #000000;
 }
 
 body.dark-mode .stButton>button {
@@ -40,24 +38,11 @@ body.light-mode .stButton>button {
     border: none;
 }
 
-/* כפתור טוגל */
-.stSidebar [data-testid="stToggle"] {
-    margin-top: 20px;
-    font-weight: bold;
-}
-
-/* כותרות */
 h1, h2, h3 {
     font-family: 'Helvetica Neue', sans-serif;
     font-weight: 700;
 }
 
-/* טקסט רגיל */
 p {
     font-family: 'Segoe UI', sans-serif;
-}
-
-/* בר תפריט */
-header {
-    visibility: hidden;
 }
