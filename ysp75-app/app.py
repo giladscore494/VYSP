@@ -291,3 +291,4 @@ def calculate_ysp_score(row):
     league_weight = league_weights.get(league.strip(), 0.9)
     ysp_score *= league_weight
     return min(round(ysp_score, 2), 100)
+st.markdown("</div>", unsafe_allow_html=True)
