@@ -1,9 +1,9 @@
-
 import streamlit as st
 import os
 import pandas as pd
+import datetime
 
-# הגדרות עמוד
+# הגדרת עמוד
 st.set_page_config(page_title="FstarVfootball", layout="wide")
 
 # טעינת CSS
@@ -26,8 +26,7 @@ def load_club_data():
     return df
 
 def match_text(query, text):
-    parts = str(text).lower().split()
-    return any(query in part for part in parts)
+    return query.lower() in str(text).lower()
 
 def calculate_fit_score(player_row, club_row):
     score = 0
@@ -220,62 +219,129 @@ def calculate_ysp_score(row):
     ysp_score *= league_weight
     return min(round(ysp_score, 2), 100)
 
-# ===== ממשק משתמש =====
-st.title("FstarVfootball")
+def run_player_search():
+    st.title("FstarVfootball")
 
-player_query = st.text_input("הקלד שם שחקן (חלק מהשם):", key="player_input").strip().lower()
-df = load_data()
-clubs_df = load_club_data()
-matching_players = df[df["Player"].apply(lambda name: match_text(player_query, name))]
+    df = load_data()
+    clubs_df = load_club_data()
 
-if player_query and not matching_players.empty:
-    selected_player = st.selectbox("בחר שחקן מתוך תוצאות החיפוש:", matching_players["Player"].tolist())
-    row = df[df["Player"] == selected_player].iloc[0]
+    player_query = st.text_input("הקלד שם שחקן (חלק מהשם):", key="player_input").strip().lower()
+    matching_players = df[df["Player"].apply(lambda name: match_text(player_query, name))]
 
-    st.subheader(f"שחקן: {row['Player']}")
-    st.write(f"ליגה: {row['Comp']} | גיל: {row['Age']} | עמדה: {row['Pos']}")
-    st.write(f"דקות: {row['Min']} | גולים: {row['Gls']} | בישולים: {row['Ast']}")
-    st.write(f"דריבלים מוצלחים: {row['Succ']} | מסירות מפתח: {row['KP']}")
+    if player_query and not matching_players.empty:
+        if len(matching_players) == 1:
+            selected_player = matching_players["Player"].iloc[0]
+        else:
+            selected_player = st.selectbox("בחר שחקן מתוך תוצאות החיפוש:", matching_players["Player"].tolist())
 
-    ysp_score = calculate_ysp_score(row)
-    st.metric("מדד YSP-75", ysp_score)
+        row = df[df["Player"] == selected_player].iloc[0]
 
-    club_query = st.text_input("הקלד שם קבוצה (חלק מהשם):", key="club_input").strip().lower()
-    matching_clubs = [c for c in clubs_df["Club"].unique() if match_text(club_query, c)]
+        st.subheader(f"שחקן: {row['Player']}")
+        st.write(f"ליגה: {row['Comp']} | גיל: {row['Age']} | עמדה: {row['Pos']}")
+        st.write(f"דקות: {row['Min']} | גולים: {row['Gls']} | בישולים: {row['Ast']}")
+        st.write(f"דריבלים מוצלחים: {row['Succ']} | מסירות מפתח: {row['KP']}")
 
-    if club_query and matching_clubs:
-        selected_club = st.selectbox("בחר קבוצה מתוך התוצאות:", matching_clubs)
-        club_data = clubs_df[clubs_df["Club"] == selected_club]
-        if not club_data.empty:
-            club_row = club_data.iloc[0]
-            fit_score = calculate_fit_score(player_row=row, club_row=club_row)
-            st.metric("רמת התאמה חזויה לקבוצה", f"{fit_score}%")
-            if fit_score >= 85:
-                st.success("התאמה מצוינת – סביר שיצליח במערכת הזו.")
-            elif fit_score >= 70:
-                st.info("התאמה סבירה – עשוי להסתגל היטב.")
-            else:
-                st.warning("התאמה נמוכה – דרושה התאמה טקטית או סבלנות.")
-    elif club_query:
-        st.warning("לא נמצאו קבוצות תואמות.")
+        ysp_score = calculate_ysp_score(row)
+        st.metric("מדד YSP-75", ysp_score)
 
-    with st.expander("🔍 בדוק התאמה של השחקן מול כל הקבוצות במערכת"):
-        if st.button("חשב התאמה לכל הקבוצות"):
-            scores = []
-            for i, club_row in clubs_df.iterrows():
-                score = calculate_fit_score(player_row=row, club_row=club_row)
-                scores.append((club_row["Club"], score))
+        club_query = st.text_input("הקלד שם קבוצה (חלק מהשם):", key="club_input").strip().lower()
+        matching_clubs = [c for c in clubs_df["Club"].unique() if match_text(club_query, c)]
 
-            top_scores = sorted(scores, key=lambda x: x[1], reverse=True)[:10]
-            top_df = pd.DataFrame(top_scores, columns=["Club", "Fit Score"])
+        if club_query and matching_clubs:
+            selected_club = st.selectbox("בחר קבוצה מתוך התוצאות:", matching_clubs)
+            club_data = clubs_df[clubs_df["Club"] == selected_club]
+            if not club_data.empty:
+                club_row = club_data.iloc[0]
+                fit_score = calculate_fit_score(player_row=row, club_row=club_row)
+                st.metric("רמת התאמה חזויה לקבוצה", f"{fit_score}%")
+                if fit_score >= 85:
+                    st.success("התאמה מצוינת – סביר שיצליח במערכת הזו.")
+                elif fit_score >= 70:
+                    st.info("התאמה סבירה – עשוי להסתגל היטב.")
+                else:
+                    st.warning("התאמה נמוכה – דרושה התאמה טקטית או סבלנות.")
+        elif club_query:
+            st.warning("לא נמצאו קבוצות תואמות.")
+    else:
+        if player_query:
+            st.warning("שחקן לא נמצא. נסה שם מדויק או חלק ממנו.")
 
-            st.subheader("📊 10 הקבוצות המתאימות ביותר לשחקן")
-            st.bar_chart(top_df.set_index("Club"))
+    st.caption("הנתונים מבוססים על ניתוח אלגוריתמי לצרכים חינוכיים ואנליטיים בלבד.")
 
-            csv = pd.DataFrame(scores, columns=["Club", "Fit Score"]).to_csv(index=False).encode('utf-8')
-            st.download_button("📥 הורד את כל ההתאמות כ־CSV", data=csv, file_name=f"{row['Player']}_club_fits.csv", mime='text/csv')
-else:
-    if player_query:
-        st.warning("שחקן לא נמצא. נסה שם מדויק או חלק ממנו.")
+def forecast_analysis():
+    st.title("מערכת ניתוח תחזיות - FstarVfootball")
 
-st.caption("הנתונים מבוססים על ניתוח אלגוריתמי לצרכים חינוכיים ואנליטיים בלבד.")
+    DATA_DIR = "ysp75-app"
+    DEFAULT_FORECAST_FILE = os.path.join(DATA_DIR, "forecast_data.csv")
+    HISTORY_FILE = os.path.join(DATA_DIR, "forecast_history.csv")
+
+    uploaded_file = st.file_uploader("העלה קובץ תחזיות CSV (או השתמש בקובץ שמור)", type="csv")
+
+    if uploaded_file is not None:
+        forecast_df = pd.read_csv(uploaded_file)
+
+        # שמירת ההעלאה להיסטוריה עם Timestamp
+        forecast_df["Upload_Timestamp"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        if os.path.exists(HISTORY_FILE):
+            history_df = pd.read_csv(HISTORY_FILE)
+            history_df = pd.concat([history_df, forecast_df], ignore_index=True)
+        else:
+            history_df = forecast_df
+        history_df.to_csv(HISTORY_FILE, index=False)
+        st.success("הקובץ נשמר בהיסטוריה.")
+
+    else:
+        if os.path.exists(DEFAULT_FORECAST_FILE):
+            forecast_df = pd.read_csv(DEFAULT_FORECAST_FILE)
+            st.info(f"נטען קובץ תחזיות שמור: {DEFAULT_FORECAST_FILE}")
+        else:
+            st.warning("לא הועלה קובץ תחזיות וגם לא נמצא קובץ שמור.")
+            return
+
+    st.subheader("טבלת תחזיות ותוצאות אמת")
+    st.dataframe(forecast_df)
+
+    def calc_accuracy(pred_col, actual_col):
+        df = forecast_df.dropna(subset=[pred_col, actual_col])
+        if df.empty:
+            return None
+        correct = (df[pred_col] == df[actual_col]).sum()
+        total = len(df)
+        return correct / total * 100
+
+    st.subheader("אחוזי דיוק")
+
+    for col in ["Actual_Progress", "Actual_Transfer"]:
+        acc = calc_accuracy(col, col)
+        if acc is not None:
+            st.metric(f"אחוז דיוק ב-{col}", f"{acc:.2f}%")
+        else:
+            st.write(f"אין נתונים ל-{col}")
+
+    bins = [0, 60, 75, 85, 100]
+    labels = ["נמוך", "בינוני", "גבוה", "גבוה מאוד"]
+
+    forecast_df["YSP_Category"] = pd.cut(forecast_df["YSP_Score"], bins=bins, labels=labels, include_lowest=True)
+    grouped = forecast_df.groupby("YSP_Category")[["Actual_Progress", "Actual_Transfer"]].mean() * 100
+
+    st.subheader("דיוק ממוצע לפי קטגוריות YSP:")
+    st.bar_chart(grouped)
+
+    csv_data = forecast_df.to_csv(index=False).encode("utf-8")
+    st.download_button("📥 הורד דו\"ח תחזיות כ־CSV", data=csv_data, file_name="forecast_report.csv", mime="text/csv")
+
+    # הצגת היסטוריה שמורה
+    if st.checkbox("הצג היסטוריית תחזיות קודמות"):
+        if os.path.exists(HISTORY_FILE):
+            history_df = pd.read_csv(HISTORY_FILE)
+            st.subheader("היסטוריית תחזיות")
+            st.dataframe(history_df)
+        else:
+            st.info("אין היסטוריית תחזיות לשמירה עדיין.")
+
+mode = st.sidebar.radio("בחר מצב:", ("חיפוש שחקנים", "ניתוח תחזיות"))
+
+if mode == "חיפוש שחקנים":
+    run_player_search()
+elif mode == "ניתוח תחזיות":
+    forecast_analysis()
