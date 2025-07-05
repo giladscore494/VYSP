@@ -99,10 +99,15 @@ def run_player_search():
             st.bar_chart(top_df.set_index("Club"))
             csv = top_df.to_csv(index=False).encode('utf-8')
             st.download_button("📥 הורד את כל ההתאמות כ־CSV", data=csv, file_name=f"{row['Player']}_club_fits.csv", mime='text/csv')
+# ...
+if st.button("חשב מדד משוקלל"):
+    ysp_weighted = app_extensions.calculate_weighted_ysp_score(row, manual_value)
+    st.metric("מדד YSP משוקלל", ysp_weighted)
 
-            # שמירת חיפוש עם המדד המשוקלל בלבד
-            save_search(selected_player, ysp_weighted)
+    # שמירת חיפוש עם המדד המשוקלל בלבד
+    save_search(selected_player, ysp_weighted)
 
-            else:
-            # במקרה שלא נלחץ הכפתור, לא מוצג מדד משוקלל, לא מציג התאמה וקבוצות
-            st.info("הזן שווי שוק ולחץ על 'חשב מדד משוקלל' כדי לראות את ההתאמה לקבוצה ולמועדונים.")
+    # כאן נוספים שאר הקודים להצגת מדד התאמה לקבוצה ו-10 הקבוצות המתאימות
+else:
+    # במקרה שלא נלחץ הכפתור, לא מוצג מדד משוקלל, לא מציג התאמה וקבוצות
+    st.info("הזן שווי שוק ולחץ על 'חשב מדד משוקלל' כדי לראות את ההתאמה לקבוצה ולמועדונים.")
