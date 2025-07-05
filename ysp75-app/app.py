@@ -122,12 +122,11 @@ def run_player_search():
             st.warning("שחקן לא נמצא. נסה שם מדויק או חלק ממנו.")
 
     st.caption("הנתונים מבוססים על ניתוח אלגוריתמי לצרכים חינוכיים ואנליטיים בלבד.")
-
-mode = st.sidebar.radio("בחר מצב:", ("חיפוש שחקנים", "חיפוש מתקדם", "היסטוריית חיפושים"))
-
-if mode == "חיפוש שחקנים":
-    run_player_search()
-elif mode == "חיפוש מתקדם":
-    run_advanced_search_tab_embed()
-elif mode == "היסטוריית חיפושים":
-    show_search_history()
+if mode == "חיפוש מתקדם":
+    st.subheader("🔎 חיפוש מתקדם")
+    st.info("החיפוש המתקדם ייפתח בחלון נפרד, באתר החיפוש המקצועי:")
+    st.markdown(
+        '<a href="https://fstarv-search-7ctjt8skkag7jd9aq6vicm.streamlit.app/" target="_blank" style="font-size:22px; color:#0c3c78; font-weight:bold; text-decoration:none;">🔗 עבור למסך החיפוש המתקדם</a>',
+        unsafe_allow_html=True,
+    )
+    st.caption("פיצ׳ר זה מוצג מחוץ לאפליקציה הראשית לשיפור אבטחה וחוויית משתמש.")
