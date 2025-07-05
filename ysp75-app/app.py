@@ -4,6 +4,7 @@ import pandas as pd
 from app_extensions import run_advanced_search_tab_embed  # ייבוא הפונקציה
 from search_history import save_search, show_search_history
 import app_extensions  # אם יש לך עוד פונקציות משם
+mode = st.sidebar.radio("בחר מצב:", ("חיפוש שחקנים", "היסטוריית חיפושים", "חיפוש מתקדם"))
 
 # ... כאן שאר הייבוא והגדרות שלך ...
 
