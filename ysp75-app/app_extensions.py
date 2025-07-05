@@ -1,13 +1,15 @@
 import streamlit as st
+import urllib.parse
+import re
 
 def market_value_section(player_name: str) -> float | None:
     st.markdown("---")
     st.subheader("הזן שווי שוק ידני לשחקן (אפשרי)")
 
     manual_value = st.number_input(
-        label=f"שווי שוק (בשקלים) לשחקן {player_name}",
+        label=f"שווי שוק (באירו) לשחקן {player_name}",
         min_value=0.0,
-        step=100000.0,
+        step=10000.0,
         format="%.2f",
         help="אם לא תזין ערך, השווי האוטומטי מהמאגר ישמש בחישוב.",
         key=f"manual_value_{player_name}"
@@ -144,3 +146,32 @@ def calculate_fit_score(player_row, club_row, manual_market_value=None):
         pass
 
     return round(min(score, 100), 2)
+
+def generate_transfermarkt_url(player_name: str) -> str:
+    """
+    Generate a Transfermarkt player URL based on the player's name.
+    This is a fallback when no exact URL is stored.
+    Example:
+    "Lionel Messi" -> "https://www.transfermarkt.com/lionel-messi/profil/spieler/"
+
+    The URL format is approximate and may not always be accurate.
+    """
+    # Lowercase and remove characters not allowed or problematic in URLs
+    name = player_name.lower()
+    # Replace spaces and underscores with hyphens
+    name = re.sub(r'[\s_]+', '-', name)
+    # Remove any character that is not alphanumeric or hyphen
+    name = re.sub(r'[^a-z0-9\-]', '', name)
+
+    base_url = "https://www.transfermarkt.com/"
+    url = f"{base_url}{name}/profil/spieler/"
+    return url
+
+def display_transfermarkt_link(player_name: str, url: str | None):
+    """
+    Display the Transfermarkt URL as a clickable link in Streamlit.
+    If URL is None, generate a fallback URL.
+    """
+    if not url:
+        url = generate_transfermarkt_url(player_name)
+    st.markdown(f"[Transfermarkt Profile]({url})", unsafe_allow_html=True)
