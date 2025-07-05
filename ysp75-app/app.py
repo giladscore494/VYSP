@@ -128,6 +128,6 @@ mode = st.sidebar.radio("בחר מצב:", ("חיפוש שחקנים", "חיפו�
 if mode == "חיפוש שחקנים":
     run_player_search()
 elif mode == "חיפוש מתקדם":
-    app_extensions.run_advanced_search_tab()
+    run_advanced_search_tab_embed()
 elif mode == "היסטוריית חיפושים":
     show_search_history()
