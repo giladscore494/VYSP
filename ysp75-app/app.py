@@ -1,7 +1,7 @@
 import streamlit as st
 import os
 import pandas as pd
-import app_extensions  # ייבוא קובץ ההרחבה עם הפונקציות החדשות
+import app_extensions  # כאן הקוד של ההרחבה עם הפונקציות שהכנת
 from search_history import save_search, show_search_history
 
 # הגדרת עמוד
@@ -43,27 +43,32 @@ def run_player_search():
 
         row = df[df["Player"] == selected_player].iloc[0]
 
-        # חישוב YSP גולמי לפי ביצועים
-        ysp_gross = app_extensions.calculate_ysp_score(row)
-        st.metric("מדד YSP-75 (גולמי)", ysp_gross)
-
-        # הצגת ביצועי השחקן
+        # הצגת ביצועים של השחקן - לפני שווי שוק
         st.subheader(f"שחקן: {row['Player']}")
         st.write(f"ליגה: {row['Comp']} | גיל: {row['Age']} | עמדה: {row['Pos']}")
         st.write(f"דקות: {row['Min']} | גולים: {row['Gls']} | בישולים: {row['Ast']}")
         st.write(f"דריבלים מוצלחים: {row['Succ']} | מסירות מפתח: {row['KP']}")
 
-        # הזנת שווי שוק ידני (מיליוני אירו)
+        # הצגת קישור לטרנספרמרקט עם קרדיט
+        transfermarkt_link = app_extensions.generate_transfermarkt_link(row['Player'])
+        if transfermarkt_link:
+            st.markdown(f"[לצפייה בעמוד Transfermarkt של {row['Player']}]({transfermarkt_link})")
+            st.markdown("*חיפוש מתבצע באמצעות DuckDuckGo*")
+
+        # הזנת שווי שוק ידני (רגיש לשינוי אנטר)
         manual_value = app_extensions.market_value_section(row['Player'])
 
-        # חישוב YSP משוקלל כולל שווי שוק ידני
+        # חישוב מדד YSP-75 גולמי
+        ysp_gross = app_extensions.calculate_ysp_score(row)
+
+        # חישוב מדד YSP-75 משוקלל עם שווי שוק ידני
         ysp_weighted = app_extensions.calculate_ysp_score_weighted(row, manual_market_value=manual_value)
-        st.metric("מדד YSP-75 (משוקלל)", ysp_weighted)
 
-        # שמירת החיפוש עם ציון משוקלל בלבד
-        save_search(selected_player, ysp_weighted)
+        st.metric("מדד YSP-75 (גולמי)", ysp_gross)
+        if manual_value is not None:
+            st.metric("מדד YSP-75 (משוקלל עם שווי שוק)", ysp_weighted)
 
-        # הזנת שם קבוצה לבדיקה
+        # הזנת שם קבוצה לבדיקת התאמה (ללא שווי שוק)
         club_query = st.text_input("הקלד שם קבוצה (חלק מהשם):", key="club_input").strip().lower()
         matching_clubs = [c for c in clubs_df["Club"].unique() if app_extensions.match_text(club_query, c)]
 
@@ -72,7 +77,6 @@ def run_player_search():
             club_data = clubs_df[clubs_df["Club"] == selected_club]
             if not club_data.empty:
                 club_row = club_data.iloc[0]
-                # חישוב מדד התאמה לקבוצה - ללא שווי שוק
                 fit_score = app_extensions.calculate_fit_score(player_row=row, club_row=club_row)
                 st.metric("רמת התאמה חזויה לקבוצה", f"{fit_score}%")
                 if fit_score >= 85:
@@ -84,7 +88,7 @@ def run_player_search():
         elif club_query:
             st.warning("לא נמצאו קבוצות תואמות.")
 
-        # הצגת 10 המועדונים המתאימים ביותר ללא שקלול שווי שוק
+        # הצגת 10 המועדונים המתאימים ביותר לשחקן (ללא שקלול שווי שוק)
         st.markdown("---")
         st.subheader("📊 10 המועדונים המתאימים ביותר לשחקן")
         scores = []
@@ -99,16 +103,18 @@ def run_player_search():
         csv = top_df.to_csv(index=False).encode('utf-8')
         st.download_button("📥 הורד את כל ההתאמות כ־CSV", data=csv, file_name=f"{row['Player']}_club_fits.csv", mime='text/csv')
 
-        # קישור לטרנספרמרקט לחיפוש שווי שוק
-        st.markdown("---")
-        st.write(f"[עבור לעמוד השחקן ב-Transfermarkt (חיפוש אוטומטי)](https://duckduckgo.com/?q=transfermarkt+{selected_player.replace(' ', '+')})")
-        st.caption("הקישור מפנה למנוע החיפוש DuckDuckGo עם שאילתה אוטומטית לחיפוש עמוד השחקן ב-Transfermarkt.")
+        # שמירת החיפוש עם הציון המשוקלל בלבד
+        if manual_value is not None:
+            save_search(selected_player, ysp_weighted)
+        else:
+            save_search(selected_player, ysp_gross)
 
     else:
         if player_query:
             st.warning("שחקן לא נמצא. נסה שם מדויק או חלק ממנו.")
 
     st.caption("הנתונים מבוססים על ניתוח אלגוריתמי לצרכים חינוכיים ואנליטיים בלבד.")
+
 
 mode = st.sidebar.radio("בחר מצב:", ("חיפוש שחקנים", "היסטוריית חיפושים"))
 
