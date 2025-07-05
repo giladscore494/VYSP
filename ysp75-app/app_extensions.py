@@ -1,3 +1,5 @@
+import requests
+import re
 import streamlit as st
 
 def market_value_section(player_name: str) -> float | None:
@@ -5,7 +7,7 @@ def market_value_section(player_name: str) -> float | None:
     st.subheader("הזן שווי שוק ידני לשחקן (אפשרי)")
 
     manual_value = st.number_input(
-        label=f"שווי שוק (באירו) לשחקן {player_name} (אם הקלטה היא 90 או יותר, נחשב כמיליוני אירו)",
+        label=f"שווי שוק (באירו) לשחקן {player_name}",
         min_value=0.0,
         step=100000.0,
         format="%.2f",
@@ -14,9 +16,6 @@ def market_value_section(player_name: str) -> float | None:
     )
     if manual_value == 0.0:
         return None
-    # המרה לשווי במיליוני אירו אם הקלטה >= 90 (לדוגמה 90 פירושו 90 מיליון אירו)
-    if manual_value >= 90:
-        manual_value = manual_value * 1_000_000
     return manual_value
 
 def calculate_fit_score(player_row, club_row, manual_market_value=None):
@@ -148,17 +147,17 @@ def calculate_fit_score(player_row, club_row, manual_market_value=None):
 
     return round(min(score, 100), 2)
 
-def calculate_ysp_score(row, weighted=False):
+def calculate_ysp_score(row):
     position = str(row["Pos"])
     minutes = row["Min"]
     goals = row["Gls"]
     assists = row["Ast"]
     dribbles = row["Succ"]
     key_passes = row["KP"]
-    tackles = row.get("Tkl", 0)
-    interceptions = row.get("Int", 0)
-    clearances = row.get("Clr", 0)
-    blocks = row.get("Blocks", 0)
+    tackles = row["Tkl"]
+    interceptions = row["Int"]
+    clearances = row["Clr"]
+    blocks = row["Blocks"]
     age = row["Age"]
     league = row["Comp"]
 
@@ -170,11 +169,11 @@ def calculate_ysp_score(row, weighted=False):
     }
 
     league_weights = {
-        "eng premier league": 1.00,
-        "es la liga": 0.98,
-        "de bundesliga": 0.96,
-        "it serie a": 0.95,
-        "fr ligue 1": 0.93
+        "eng Premier League": 1.00,
+        "es La Liga": 0.98,
+        "de Bundesliga": 0.96,
+        "it Serie A": 0.95,
+        "fr Ligue 1": 0.93
     }
 
     ysp_score = 0
@@ -232,44 +231,45 @@ def calculate_ysp_score(row, weighted=False):
     elif age <= 23:
         ysp_score *= 1.05
 
-    league_weight = league_weights.get(league.strip().lower(), 0.9)
+    league_weight = league_weights.get(league.strip(), 0.9)
     ysp_score *= league_weight
-
-    # אם חישוב משוקלל כולל שווי שוק
-    if weighted and "MarketValue" in row and row["MarketValue"] > 0:
-        # לדוגמא, מוסיפים תוספת מסוימת בהתאם לשווי שוק - אפשר לשנות לפי דרישותיך
-        ysp_score *= 1 + min(row["MarketValue"] / 1_000_000, 1) * 0.1
-
     return min(round(ysp_score, 2), 100)
 
-def search_transfermarkt(player_name: str) -> str | None:
-    import requests
-    import re
+def search_transfermarkt_link(player_name: str) -> str | None:
+    """
+    מחפש קישור אוטומטי לעמוד שחקן ב-Transfermarkt דרך DuckDuckGo.
+    במידה ואין תוצאות, מבצע פולבק לגוגל.
+    מחזיר את הקישור הראשון שנמצא או None אם לא נמצא.
+    """
+    headers = {
+        "User-Agent": "Mozilla/5.0"
+    }
+    query = f"site:transfermarkt.com {player_name}"
+    url_duck = f"https://duckduckgo.com/html/?q={query}"
 
-    query = f"{player_name} site:transfermarkt.com"
-    urls = []
-
-    # נסיון ראשון עם DuckDuckGo
     try:
-        ddg_url = f"https://lite.duckduckgo.com/lite/?q={requests.utils.quote(query)}"
-        response = requests.get(ddg_url, timeout=5)
-        if response.ok:
-            matches = re.findall(r'<a href="(https://www.transfermarkt.com/spieler/[^"]+)"', response.text)
-            if matches:
-                return matches[0]
-    except:
-        pass
+        # חיפוש ב-DuckDuckGo
+        res = requests.get(url_duck, headers=headers, timeout=5)
+        if res.status_code == 200:
+            html = res.text
+            links = re.findall(r'<a rel="nofollow" class="result__a" href="([^"]+)"', html)
+            for link in links:
+                if "transfermarkt.com" in link:
+                    return link
 
-    # פולבק לגוגל
-    try:
-        google_search_url = f"https://www.google.com/search?q={requests.utils.quote(query)}"
-        headers = {"User-Agent": "Mozilla/5.0"}
-        response = requests.get(google_search_url, headers=headers, timeout=5)
-        if response.ok:
-            matches = re.findall(r'https://www.transfermarkt.com/spieler/[^"]+', response.text)
-            if matches:
-                return matches[0]
-    except:
-        pass
+        # פולבק לחיפוש בגוגל אם DuckDuckGo לא מצא תוצאות
+        url_google = f"https://www.google.com/search?q={query}"
+        res = requests.get(url_google, headers=headers, timeout=5)
+        if res.status_code == 200:
+            html = res.text
+            links = re.findall(r'<a href="(/url\?q=https://www.transfermarkt.com[^&"]+)', html)
+            for link in links:
+                clean_link = link.split("&")[0].replace("/url?q=", "")
+                if "transfermarkt.com" in clean_link:
+                    return clean_link
+
+    except Exception as e:
+        print(f"Error searching for transfermarkt link: {e}")
+        return None
 
     return None
