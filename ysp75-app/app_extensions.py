@@ -1,53 +1,25 @@
 import streamlit as st
-import requests
-from urllib.parse import quote_plus
-import pandas as pd
 
 def market_value_section(player_name: str) -> float | None:
     st.markdown("---")
-    st.subheader("הזן שווי שוק ידני לשחקן (באירו, אם 90 ומעלה נחשב במיליוני אירו)")
+    st.subheader("הזן שווי שוק ידני לשחקן (אפשרי)")
 
     manual_value = st.number_input(
-        label=f"שווי שוק לשחקן {player_name}",
+        label=f"שווי שוק (באירו) לשחקן {player_name} (אם הקלטה היא 90 או יותר, נחשב כמיליוני אירו)",
         min_value=0.0,
-        step=0.1,
+        step=100000.0,
         format="%.2f",
         help="אם לא תזין ערך, השווי האוטומטי מהמאגר ישמש בחישוב.",
         key=f"manual_value_{player_name}"
     )
-
-    if manual_value >= 90:
-        # להמיר למיליוני אירו אוטומטית
-        manual_value = manual_value * 1_000_000
-
     if manual_value == 0.0:
         return None
+    # המרה לשווי במיליוני אירו אם הקלטה >= 90 (לדוגמה 90 פירושו 90 מיליון אירו)
+    if manual_value >= 90:
+        manual_value = manual_value * 1_000_000
     return manual_value
 
-def find_transfermarkt_link(player_name: str) -> str:
-    # חיפוש ב-DuckDuckGo עם fallback לגוגל
-    query = f"{player_name} site:transfermarkt.com"
-    url = f"https://duckduckgo.com/html/?q={quote_plus(query)}"
-    headers = {
-        "User-Agent": "Mozilla/5.0"
-    }
-    try:
-        resp = requests.get(url, headers=headers, timeout=5)
-        if resp.status_code == 200:
-            html = resp.text
-            # חיפוש קישור ראשון שמכיל transfermarkt.com/player
-            import re
-            matches = re.findall(r'href="(https://www.transfermarkt.com/[^"]+)"', html)
-            for m in matches:
-                if "/player" in m:
-                    return m
-    except Exception:
-        pass
-
-    # fallback - חיפוש בגוגל (אפשר להוסיף אם יש API, כרגע מחזיר ריק)
-    return ""
-
-def calculate_fit_score(player_row, club_row, include_market_value=True):
+def calculate_fit_score(player_row, club_row, manual_market_value=None):
     score = 0
     weights = {
         "style": 0.20,
@@ -57,7 +29,7 @@ def calculate_fit_score(player_row, club_row, include_market_value=True):
         "pass_match": 0.10,
         "formation_role": 0.15,
         "age_dynamics": 0.05,
-        "personal_style": 0.10,
+        "personal_style": 0.05,
         "roi_factor": 0.05
     }
 
@@ -73,12 +45,20 @@ def calculate_fit_score(player_row, club_row, include_market_value=True):
     market_value = player_row.get("MarketValue", 0)
     future_value = player_row.get("FutureValue", 0)
 
-    formation = club_row["Common Formation"]
-    style = club_row["Playing Style"]
-    press = club_row["Pressing Style"]
-    def_line = club_row["Defensive Line Depth"]
-    pass_acc = club_row["Pass Accuracy (%)"]
-    team_xg = club_row["Team xG per Match"]
+    if club_row is not None:
+        formation = club_row["Common Formation"]
+        style = club_row["Playing Style"]
+        press = club_row["Pressing Style"]
+        def_line = club_row["Defensive Line Depth"]
+        pass_acc = club_row["Pass Accuracy (%)"]
+        team_xg = club_row["Team xG per Match"]
+    else:
+        formation = ""
+        style = ""
+        press = ""
+        def_line = ""
+        pass_acc = 0
+        team_xg = 0
 
     style_score = 50
     if "Attacking" in style and "FW" in position:
@@ -151,20 +131,145 @@ def calculate_fit_score(player_row, club_row, include_market_value=True):
         personal_score = 60
     score += personal_score * weights["personal_style"]
 
-    if include_market_value:
-        roi_score = 50
-        try:
-            base_value = market_value
-            if base_value > 0 and future_value > 0:
-                roi = (future_value - base_value) / base_value
-                if roi >= 1.0:
-                    roi_score = 100
-                elif roi >= 0.5:
-                    roi_score = 80
-                elif roi >= 0.2:
-                    roi_score = 65
-            score += roi_score * weights["roi_factor"]
-        except:
-            pass
+    roi_score = 50
+    try:
+        base_value = manual_market_value if manual_market_value is not None else market_value
+        if base_value > 0 and future_value > 0:
+            roi = (future_value - base_value) / base_value
+            if roi >= 1.0:
+                roi_score = 100
+            elif roi >= 0.5:
+                roi_score = 80
+            elif roi >= 0.2:
+                roi_score = 65
+        score += roi_score * weights["roi_factor"]
+    except:
+        pass
 
     return round(min(score, 100), 2)
+
+def calculate_ysp_score(row, weighted=False):
+    position = str(row["Pos"])
+    minutes = row["Min"]
+    goals = row["Gls"]
+    assists = row["Ast"]
+    dribbles = row["Succ"]
+    key_passes = row["KP"]
+    tackles = row.get("Tkl", 0)
+    interceptions = row.get("Int", 0)
+    clearances = row.get("Clr", 0)
+    blocks = row.get("Blocks", 0)
+    age = row["Age"]
+    league = row["Comp"]
+
+    benchmarks = {
+        "GK": {"Min": 3000, "Clr": 30, "Tkl": 10, "Blocks": 15},
+        "DF": {"Tkl": 50, "Int": 50, "Clr": 120, "Blocks": 30, "Min": 3000, "Gls": 3, "Ast": 2},
+        "MF": {"Gls": 10, "Ast": 10, "Succ": 50, "KP": 50, "Min": 3000},
+        "FW": {"Gls": 20, "Ast": 15, "Succ": 40, "KP": 40, "Min": 3000}
+    }
+
+    league_weights = {
+        "eng premier league": 1.00,
+        "es la liga": 0.98,
+        "de bundesliga": 0.96,
+        "it serie a": 0.95,
+        "fr ligue 1": 0.93
+    }
+
+    ysp_score = 0
+    if "GK" in position:
+        bm = benchmarks["GK"]
+        ysp_score = (
+            (minutes / bm["Min"]) * 40 +
+            (clearances / bm["Clr"]) * 20 +
+            (tackles / bm["Tkl"]) * 20 +
+            (blocks / bm["Blocks"]) * 20
+        )
+    elif "DF" in position:
+        bm = benchmarks["DF"]
+        ysp_score = (
+            (tackles / bm["Tkl"]) * 18 +
+            (interceptions / bm["Int"]) * 18 +
+            (clearances / bm["Clr"]) * 18 +
+            (blocks / bm["Blocks"]) * 10 +
+            (minutes / bm["Min"]) * 10 +
+            (goals / bm["Gls"]) * 13 +
+            (assists / bm["Ast"]) * 13
+        )
+    elif "MF" in position:
+        bm = benchmarks["MF"]
+        ysp_score = (
+            (goals / bm["Gls"]) * 20 +
+            (assists / bm["Ast"]) * 20 +
+            (dribbles / bm["Succ"]) * 20 +
+            (key_passes / bm["KP"]) * 20 +
+            (minutes / bm["Min"]) * 20
+        )
+    elif "FW" in position:
+        bm = benchmarks["FW"]
+        ysp_score = (
+            (goals / bm["Gls"]) * 30 +
+            (assists / bm["Ast"]) * 25 +
+            (dribbles / bm["Succ"]) * 15 +
+            (key_passes / bm["KP"]) * 15 +
+            (minutes / bm["Min"]) * 15
+        )
+    else:
+        ysp_score = (goals * 3 + assists * 2 + minutes / 250)
+
+    if minutes > 0:
+        contribution_per_90 = ((goals + assists + dribbles * 0.5 + key_passes * 0.5) / minutes) * 90
+        if contribution_per_90 >= 1.2:
+            ysp_score += 15
+        elif contribution_per_90 >= 0.9:
+            ysp_score += 10
+        elif contribution_per_90 >= 0.6:
+            ysp_score += 5
+
+    if age <= 20:
+        ysp_score *= 1.1
+    elif age <= 23:
+        ysp_score *= 1.05
+
+    league_weight = league_weights.get(league.strip().lower(), 0.9)
+    ysp_score *= league_weight
+
+    # אם חישוב משוקלל כולל שווי שוק
+    if weighted and "MarketValue" in row and row["MarketValue"] > 0:
+        # לדוגמא, מוסיפים תוספת מסוימת בהתאם לשווי שוק - אפשר לשנות לפי דרישותיך
+        ysp_score *= 1 + min(row["MarketValue"] / 1_000_000, 1) * 0.1
+
+    return min(round(ysp_score, 2), 100)
+
+def search_transfermarkt(player_name: str) -> str | None:
+    import requests
+    import re
+
+    query = f"{player_name} site:transfermarkt.com"
+    urls = []
+
+    # נסיון ראשון עם DuckDuckGo
+    try:
+        ddg_url = f"https://lite.duckduckgo.com/lite/?q={requests.utils.quote(query)}"
+        response = requests.get(ddg_url, timeout=5)
+        if response.ok:
+            matches = re.findall(r'<a href="(https://www.transfermarkt.com/spieler/[^"]+)"', response.text)
+            if matches:
+                return matches[0]
+    except:
+        pass
+
+    # פולבק לגוגל
+    try:
+        google_search_url = f"https://www.google.com/search?q={requests.utils.quote(query)}"
+        headers = {"User-Agent": "Mozilla/5.0"}
+        response = requests.get(google_search_url, headers=headers, timeout=5)
+        if response.ok:
+            matches = re.findall(r'https://www.transfermarkt.com/spieler/[^"]+', response.text)
+            if matches:
+                return matches[0]
+    except:
+        pass
+
+    return None
