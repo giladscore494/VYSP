@@ -261,3 +261,62 @@ def calculate_ysp_score(row):
     league_weight = league_weights.get(league.strip(), 0.9)
     ysp_score *= league_weight
     return min(round(ysp_score, 2), 100)
+
+def run_advanced_search_tab():
+    import os
+    import pandas as pd
+    import streamlit as st
+
+    st.title("🔎 חיפוש מתקדם לפי ביצועים")
+
+    # טעינת קובץ נתונים
+    path = os.path.join("ysp75-app", "players_simplified_2025.csv")
+    df = pd.read_csv(path)
+    df.columns = df.columns.str.strip()
+
+    positions = sorted(df["Pos"].unique())
+    pos_filter = st.selectbox("בחר עמדה לסינון:", positions)
+
+    filtered_df = df[df["Pos"] == pos_filter]
+
+    # סינון מתקדם לפי נתונים מתאימים לעמדה
+    if "GK" in pos_filter:
+        min_clr = st.slider("ניקויים (Clearances)", 0, 100, 10)
+        filtered_df = filtered_df[filtered_df["Clr"] >= min_clr]
+    elif "DF" in pos_filter:
+        min_tkl = st.slider("תיקולים", 0, 100, 20)
+        min_blocks = st.slider("חסימות", 0, 50, 5)
+        filtered_df = filtered_df[(filtered_df["Tkl"] >= min_tkl) & (filtered_df["Blocks"] >= min_blocks)]
+    elif "MF" in pos_filter or "FW" in pos_filter:
+        min_kp = st.slider("מסירות מפתח", 0, 100, 10)
+        min_dribbles = st.slider("דריבלים מוצלחים", 0, 100, 10)
+        filtered_df = filtered_df[(filtered_df["KP"] >= min_kp) & (filtered_df["Succ"] >= min_dribbles)]
+
+    # סינון נוסף לפי גיל ו־xG צפוי
+    min_age = st.slider("גיל מינימלי", 15, 30, 17)
+    max_age = st.slider("גיל מקסימלי", 18, 30, 24)
+    min_xg = st.slider("xG צפוי", 0.0, 1.5, 0.3)
+    filtered_df = filtered_df[
+        (filtered_df["Age"] >= min_age) & 
+        (filtered_df["Age"] <= max_age) &
+        (filtered_df["xG"] >= min_xg)
+    ]
+
+    st.subheader(f"נמצאו {len(filtered_df)} שחקנים מתאימים")
+    for _, row in filtered_df.iterrows():
+        st.markdown(f"### {row['Player']} ({row['Age']}), {row['Pos']} - {row['Comp']}")
+        ysp = calculate_ysp_score(row)
+        st.write(f"🔢 מדד YSP: {ysp}")
+
+        # קישור ל־Transfermarkt
+        link = generate_transfermarkt_link(row["Player"])
+        st.markdown(f"[🔗 עמוד Transfermarkt]({link})")
+
+        # שווי שוק ו־ROI
+        market_value = st.number_input(f"💶 הזן שווי שוק נוכחי ב-מיליון אירו עבור {row['Player']}", min_value=0.0, step=0.1, format="%.2f", key=f"mv_{row['Player']}")
+        if market_value > 0:
+            predicted = (ysp / 100) * 80 + 20
+            roi_label = "פוטנציאל רווח משמעותי" if predicted > market_value else "פוטנציאל רווח מתון או חסר"
+            st.write(f"💡 {roi_label} (YSP: {ysp}, שווי נוכחי: {market_value}M)")
+
+        st.markdown("---")
