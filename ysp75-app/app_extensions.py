@@ -261,6 +261,7 @@ def calculate_ysp_score(row):
     league_weight = league_weights.get(league.strip(), 0.9)
     ysp_score *= league_weight
   return min(round(ysp_score, 2), 100)
+
 def run_advanced_search_tab():
     import os
     import pandas as pd
@@ -303,7 +304,7 @@ def run_advanced_search_tab():
     age_range = st.slider("טווח גילאים", 15, 30, (17, 24))
     xg_range = st.slider("xG צפוי", 0.0, 1.5, (0.0, 1.5), step=0.01)
     filtered_df = filtered_df[
-        (filtered_df["Age"] >= age_range[0]) & 
+        (filtered_df["Age"] >= age_range[0]) &
         (filtered_df["Age"] <= age_range[1]) &
         (filtered_df["xG"] >= xg_range[0]) & (filtered_df["xG"] <= xg_range[1])
     ]
@@ -319,16 +320,4 @@ def run_advanced_search_tab():
         st.markdown(f"[🔗 עמוד Transfermarkt]({link})")
 
         # שווי שוק ו־ROI
-        market_value = st.number_input(
-            f"💶 הזן שווי שוק נוכחי ב-מיליון אירו עבור {row['Player']}",
-            min_value=0.0,
-            step=0.1,
-            format="%.2f",
-            key=f"mv_{row['Player']}"
-        )
-        if market_value > 0:
-            predicted = (ysp / 100) * 80 + 20
-            roi_label = "פוטנציאל רווח משמעותי" if predicted > market_value else "פוטנציאל רווח מתון או חסר"
-            st.write(f"💡 {roi_label} (YSP: {ysp}, שווי נוכחי: {market_value}M)")
-
-        st.markdown("---")
+        market_va_
