@@ -261,7 +261,6 @@ def calculate_ysp_score(row):
     league_weight = league_weights.get(league.strip(), 0.9)
     ysp_score *= league_weight
   return min(round(ysp_score, 2), 100)
-
 def run_advanced_search_tab():
     import os
     import pandas as pd
