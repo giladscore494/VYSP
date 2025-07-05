@@ -264,11 +264,11 @@ def calculate_ysp_score(row):
 import streamlit as st
 
 def run_advanced_search_tab_embed():
-    st.title("🔎 חיפוש מתקדם (הטמעה)")
-    st.info("החיפוש המתקדם נטען כמיני-אפליקציה חיצונית (embed).")
+    st.title("🔎 חיפוש מתקדם לפי ביצועים (מוטמע)")
+    st.info("כל החיפוש המתקדם רץ כ־iframe מתוך FstarV Search. ניתן להשתמש בכל הפילטרים החכמים – הכל מתעדכן אוטומטית!")
     st.components.v1.iframe(
         "https://fstarv-search-7ctjt8skkag7jd9aq6vicm.streamlit.app/",
-        width=1100,
-        height=1000,
+        width=1200,
+        height=1200,
         scrolling=True
     )
