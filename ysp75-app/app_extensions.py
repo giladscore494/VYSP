@@ -1,22 +1,57 @@
 import streamlit as st
-import urllib.parse
-import re
+import requests
+from bs4 import BeautifulSoup
 
 def market_value_section(player_name: str) -> float | None:
     st.markdown("---")
-    st.subheader("הזן שווי שוק ידני לשחקן (אפשרי)")
+    st.subheader("הזן שווי שוק ידני לשחקן (באירו)")
 
-    manual_value = st.number_input(
-        label=f"שווי שוק (באירו) לשחקן {player_name}",
+    manual_value_raw = st.number_input(
+        label=f"שווי שוק (באירו) לשחקן {player_name} (לדוגמה, 90 עבור 90 מיליון)",
         min_value=0.0,
-        step=10000.0,
+        step=1.0,
         format="%.2f",
         help="אם לא תזין ערך, השווי האוטומטי מהמאגר ישמש בחישוב.",
         key=f"manual_value_{player_name}"
     )
-    if manual_value == 0.0:
+
+    submit = st.button("אשר שווי שוק")
+
+    if submit:
+        if manual_value_raw is None or manual_value_raw == 0:
+            return None
+        # המרה חכמה: אם הערך קטן מ-1000, נחשב כמיליוני יורו
+        if manual_value_raw < 1000:
+            manual_value = manual_value_raw * 1_000_000
+        else:
+            manual_value = manual_value_raw
+        return manual_value
+    else:
         return None
-    return manual_value
+
+def find_transfermarkt_url(player_name):
+    query = f"{player_name} site:transfermarkt.com"
+    url = f"https://duckduckgo.com/html/?q={requests.utils.quote(query)}"
+
+    try:
+        res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"})
+        soup = BeautifulSoup(res.text, "html.parser")
+        results = soup.find_all("a", class_="result__a", href=True)
+        for a in results:
+            href = a['href']
+            if "transfermarkt.com" in href:
+                return href
+    except Exception:
+        return None
+    return None
+
+def display_transfermarkt_link(player_name, existing_url=None):
+    st.markdown("### קישור ל-Transfermarkt (לבדיקה והזנת שווי שוק)")
+    url = existing_url or find_transfermarkt_url(player_name)
+    if url:
+        st.markdown(f"[לחץ כאן לעמוד ה-Transfermarkt של {player_name}]({url})")
+    else:
+        st.info("לא נמצא קישור אוטומטי ל-Transfermarkt עבור שחקן זה.")
 
 def calculate_fit_score(player_row, club_row, manual_market_value=None):
     score = 0
@@ -146,32 +181,3 @@ def calculate_fit_score(player_row, club_row, manual_market_value=None):
         pass
 
     return round(min(score, 100), 2)
-
-def generate_transfermarkt_url(player_name: str) -> str:
-    """
-    Generate a Transfermarkt player URL based on the player's name.
-    This is a fallback when no exact URL is stored.
-    Example:
-    "Lionel Messi" -> "https://www.transfermarkt.com/lionel-messi/profil/spieler/"
-
-    The URL format is approximate and may not always be accurate.
-    """
-    # Lowercase and remove characters not allowed or problematic in URLs
-    name = player_name.lower()
-    # Replace spaces and underscores with hyphens
-    name = re.sub(r'[\s_]+', '-', name)
-    # Remove any character that is not alphanumeric or hyphen
-    name = re.sub(r'[^a-z0-9\-]', '', name)
-
-    base_url = "https://www.transfermarkt.com/"
-    url = f"{base_url}{name}/profil/spieler/"
-    return url
-
-def display_transfermarkt_link(player_name: str, url: str | None):
-    """
-    Display the Transfermarkt URL as a clickable link in Streamlit.
-    If URL is None, generate a fallback URL.
-    """
-    if not url:
-        url = generate_transfermarkt_url(player_name)
-    st.markdown(f"[Transfermarkt Profile]({url})", unsafe_allow_html=True)
