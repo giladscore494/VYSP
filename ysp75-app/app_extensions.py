@@ -273,25 +273,27 @@ def run_advanced_search_tab():
     df = pd.read_csv(path)
     df.columns = df.columns.str.strip()
 
-    positions = sorted(df["Pos"].unique())
+    # מציג רק עמדות עיקריות
+    positions = ["GK", "DF", "MF", "FW"]
     pos_filter = st.selectbox("בחר עמדה לסינון:", positions)
 
-    filtered_df = df[df["Pos"] == pos_filter]
+    # סינון כל שחקן שבו מופיעה העמדה (כולל DF,MF וכדומה)
+    filtered_df = df[df["Pos"].str.contains(pos_filter)]
 
-    # סינון מתקדם לפי נתונים מתאימים לעמדה - תמיד טווח קבוע!
-    if "GK" in pos_filter:
+    # סינון מתקדם לפי נתונים רלוונטיים לעמדה
+    if pos_filter == "GK":
         clr_range = st.slider("ניקויים (Clearances)", 0, 100, (0, 100))
         filtered_df = filtered_df[
             (filtered_df["Clr"] >= clr_range[0]) & (filtered_df["Clr"] <= clr_range[1])
         ]
-    elif "DF" in pos_filter:
+    elif pos_filter == "DF":
         tkl_range = st.slider("תיקולים", 0, 100, (0, 100))
         blocks_range = st.slider("חסימות", 0, 50, (0, 50))
         filtered_df = filtered_df[
             (filtered_df["Tkl"] >= tkl_range[0]) & (filtered_df["Tkl"] <= tkl_range[1]) &
             (filtered_df["Blocks"] >= blocks_range[0]) & (filtered_df["Blocks"] <= blocks_range[1])
         ]
-    elif "MF" in pos_filter or "FW" in pos_filter:
+    elif pos_filter in ["MF", "FW"]:
         kp_range = st.slider("מסירות מפתח", 0, 100, (0, 100))
         dribbles_range = st.slider("דריבלים מוצלחים", 0, 100, (0, 100))
         filtered_df = filtered_df[
