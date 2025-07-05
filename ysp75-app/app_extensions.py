@@ -1,49 +1,137 @@
+import os
+import json
+import pandas as pd
 import streamlit as st
-import requests
-from bs4 import BeautifulSoup
 import urllib.parse
+
+def save_search(player_name, ysp_weighted_score, ysp_gross_score=None):
+    filename = "search_history.json"
+    if os.path.exists(filename):
+        with open(filename, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    else:
+        data = []
+
+    entry = {
+        "Player": player_name,
+        "מדד משוקלל": ysp_weighted_score,
+        "מדד גולמי": ysp_gross_score if ysp_gross_score is not None else "",
+        "Timestamp": pd.Timestamp.now().isoformat()
+    }
+
+    data.append(entry)
+
+    with open(filename, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
+
+def show_search_history():
+    filename = "search_history.json"
+    if not os.path.exists(filename):
+        st.warning("אין היסטוריית חיפושים להצגה.")
+        return
+
+    with open(filename, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    if not data:
+        st.warning("אין היסטוריית חיפושים להצגה.")
+        return
+
+    df = pd.DataFrame(data)
+
+    st.subheader("היסטוריית חיפושים")
+    st.dataframe(df[["Player", "מדד גולמי", "מדד משוקלל", "Timestamp"]])
 
 def match_text(query, text):
     return query.lower() in str(text).lower()
 
-def generate_transfermarkt_link(player_name: str) -> str | None:
-    query = f"site:transfermarkt.com {player_name}"
-    ddg_url = f"https://duckduckgo.com/html/?q={urllib.parse.quote_plus(query)}"
-    try:
-        res = requests.get(ddg_url, headers={"User-Agent": "Mozilla/5.0"})
-        if res.status_code == 200:
-            soup = BeautifulSoup(res.text, 'html.parser')
-            results = soup.find_all("a", class_="result__a", href=True)
-            for a in results:
-                href = a['href']
-                if "transfermarkt.com" in href:
-                    if href.startswith("/l/?kh="):
-                        parsed = urllib.parse.urlparse(href)
-                        q = urllib.parse.parse_qs(parsed.query).get('uddg', [None])[0]
-                        if q:
-                            return q
-                    else:
-                        return href
-    except Exception:
-        pass
-    google_search = f"https://www.google.com/search?q=site:transfermarkt.com+{urllib.parse.quote_plus(player_name)}"
-    return google_search
+def calculate_ysp_score(row):
+    position = str(row["Pos"])
+    minutes = row["Min"]
+    goals = row["Gls"]
+    assists = row["Ast"]
+    dribbles = row["Succ"]
+    key_passes = row["KP"]
+    tackles = row["Tkl"]
+    interceptions = row["Int"]
+    clearances = row["Clr"]
+    blocks = row["Blocks"]
+    age = row["Age"]
+    league = row["Comp"]
 
-def market_value_section(player_name: str) -> float | None:
-    st.markdown("---")
-    st.subheader("הזן שווי שוק ידני לשחקן (אירו במיליונים)")
+    benchmarks = {
+        "GK": {"Min": 3000, "Clr": 30, "Tkl": 10, "Blocks": 15},
+        "DF": {"Tkl": 50, "Int": 50, "Clr": 120, "Blocks": 30, "Min": 3000, "Gls": 3, "Ast": 2},
+        "MF": {"Gls": 10, "Ast": 10, "Succ": 50, "KP": 50, "Min": 3000},
+        "FW": {"Gls": 20, "Ast": 15, "Succ": 40, "KP": 40, "Min": 3000}
+    }
 
-    manual_value = st.number_input(
-        label=f"שווי שוק (במיליוני אירו) לשחקן {player_name}",
-        min_value=0.0,
-        step=1.0,
-        format="%.1f",
-        help="אם לא תזין ערך, השווי האוטומטי מהמאגר ישמש בחישוב.",
-        key=f"manual_value_{player_name}"
-    )
-    if manual_value == 0.0:
-        return None
-    return manual_value
+    league_weights = {
+        "eng Premier League": 1.00,
+        "es La Liga": 0.98,
+        "de Bundesliga": 0.96,
+        "it Serie A": 0.95,
+        "fr Ligue 1": 0.93
+    }
+
+    ysp_score = 0
+    if "GK" in position:
+        bm = benchmarks["GK"]
+        ysp_score = (
+            (minutes / bm["Min"]) * 40 +
+            (clearances / bm["Clr"]) * 20 +
+            (tackles / bm["Tkl"]) * 20 +
+            (blocks / bm["Blocks"]) * 20
+        )
+    elif "DF" in position:
+        bm = benchmarks["DF"]
+        ysp_score = (
+            (tackles / bm["Tkl"]) * 18 +
+            (interceptions / bm["Int"]) * 18 +
+            (clearances / bm["Clr"]) * 18 +
+            (blocks / bm["Blocks"]) * 10 +
+            (minutes / bm["Min"]) * 10 +
+            (goals / bm["Gls"]) * 13 +
+            (assists / bm["Ast"]) * 13
+        )
+    elif "MF" in position:
+        bm = benchmarks["MF"]
+        ysp_score = (
+            (goals / bm["Gls"]) * 20 +
+            (assists / bm["Ast"]) * 20 +
+            (dribbles / bm["Succ"]) * 20 +
+            (key_passes / bm["KP"]) * 20 +
+            (minutes / bm["Min"]) * 20
+        )
+    elif "FW" in position:
+        bm = benchmarks["FW"]
+        ysp_score = (
+            (goals / bm["Gls"]) * 30 +
+            (assists / bm["Ast"]) * 25 +
+            (dribbles / bm["Succ"]) * 15 +
+            (key_passes / bm["KP"]) * 15 +
+            (minutes / bm["Min"]) * 15
+        )
+    else:
+        ysp_score = (goals * 3 + assists * 2 + minutes / 250)
+
+    if minutes > 0:
+        contribution_per_90 = ((goals + assists + dribbles * 0.5 + key_passes * 0.5) / minutes) * 90
+        if contribution_per_90 >= 1.2:
+            ysp_score += 15
+        elif contribution_per_90 >= 0.9:
+            ysp_score += 10
+        elif contribution_per_90 >= 0.6:
+            ysp_score += 5
+
+    if age <= 20:
+        ysp_score *= 1.1
+    elif age <= 23:
+        ysp_score *= 1.05
+
+    league_weight = league_weights.get(league.strip(), 0.9)
+    ysp_score *= league_weight
+    return min(round(ysp_score, 2), 100)
 
 def calculate_fit_score(player_row, club_row, manual_market_value=None):
     score = 0
@@ -174,90 +262,28 @@ def calculate_fit_score(player_row, club_row, manual_market_value=None):
 
     return round(min(score, 100), 2)
 
-def calculate_ysp_score(row):
-    position = str(row["Pos"])
-    minutes = row["Min"]
-    goals = row["Gls"]
-    assists = row["Ast"]
-    dribbles = row["Succ"]
-    key_passes = row["KP"]
-    tackles = row["Tkl"]
-    interceptions = row["Int"]
-    clearances = row["Clr"]
-    blocks = row["Blocks"]
-    age = row["Age"]
-    league = row["Comp"]
+def market_value_section(player_name: str) -> float | None:
+    st.markdown("---")
+    st.subheader("הזן שווי שוק ידני לשחקן (אפשרי)")
 
-    benchmarks = {
-        "GK": {"Min": 3000, "Clr": 30, "Tkl": 10, "Blocks": 15},
-        "DF": {"Tkl": 50, "Int": 50, "Clr": 120, "Blocks": 30, "Min": 3000, "Gls": 3, "Ast": 2},
-        "MF": {"Gls": 10, "Ast": 10, "Succ": 50, "KP": 50, "Min": 3000},
-        "FW": {"Gls": 20, "Ast": 15, "Succ": 40, "KP": 40, "Min": 3000}
-    }
+    manual_value = st.number_input(
+        label=f"שווי שוק (במיליוני אירו) לשחקן {player_name}",
+        min_value=0.0,
+        step=0.1,
+        format="%.2f",
+        help="אם לא תזין ערך, השווי האוטומטי מהמאגר ישמש בחישוב.",
+        key=f"manual_value_{player_name}"
+    )
+    if manual_value == 0.0:
+        return None
+    return manual_value * 1_000_000  # המרה למספר בשקלים (או אירו מלאים)
 
-    league_weights = {
-        "eng Premier League": 1.00,
-        "es La Liga": 0.98,
-        "de Bundesliga": 0.96,
-        "it Serie A": 0.95,
-        "fr Ligue 1": 0.93
-    }
+def generate_transfermarkt_link(player_name: str):
+    base_url = "https://duckduckgo.com/?q="
+    query = urllib.parse.quote(f"site:transfermarkt.com {player_name}")
+    return f"{base_url}{query}"
 
-    ysp_score = 0
-    if "GK" in position:
-        bm = benchmarks["GK"]
-        ysp_score = (
-            (minutes / bm["Min"]) * 40 +
-            (clearances / bm["Clr"]) * 20 +
-            (tackles / bm["Tkl"]) * 20 +
-            (blocks / bm["Blocks"]) * 20
-        )
-    elif "DF" in position:
-        bm = benchmarks["DF"]
-        ysp_score = (
-            (tackles / bm["Tkl"]) * 18 +
-            (interceptions / bm["Int"]) * 18 +
-            (clearances / bm["Clr"]) * 18 +
-            (blocks / bm["Blocks"]) * 10 +
-            (minutes / bm["Min"]) * 10 +
-            (goals / bm["Gls"]) * 13 +
-            (assists / bm["Ast"]) * 13
-        )
-    elif "MF" in position:
-        bm = benchmarks["MF"]
-        ysp_score = (
-            (goals / bm["Gls"]) * 20 +
-            (assists / bm["Ast"]) * 20 +
-            (dribbles / bm["Succ"]) * 20 +
-            (key_passes / bm["KP"]) * 20 +
-            (minutes / bm["Min"]) * 20
-        )
-    elif "FW" in position:
-        bm = benchmarks["FW"]
-        ysp_score = (
-            (goals / bm["Gls"]) * 30 +
-            (assists / bm["Ast"]) * 25 +
-            (dribbles / bm["Succ"]) * 15 +
-            (key_passes / bm["KP"]) * 15 +
-            (minutes / bm["Min"]) * 15
-        )
-    else:
-        ysp_score = (goals * 3 + assists * 2 + minutes / 250)
-
-    if minutes > 0:
-        contribution_per_90 = ((goals + assists + dribbles * 0.5 + key_passes * 0.5) / minutes) * 90
-        if contribution_per_90 >= 1.2:
-            ysp_score += 15
-        elif contribution_per_90 >= 0.9:
-            ysp_score += 10
-        elif contribution_per_90 >= 0.6:
-            ysp_score += 5
-
-    if age <= 20:
-        ysp_score *= 1.1
-    elif age <= 23:
-        ysp_score *= 1.05
-
-    league_weight = league_weights.get(league.strip(), 0.9)
-    ysp_score *= league_weight
-    return min(round(ysp_score, 2), 100)
+def display_transfermarkt_link(player_name: str):
+    link = generate_transfermarkt_link(player_name)
+    st.markdown(f"[קישור לעמוד Transfermarkt של {player_name}]({link})")
+    st.markdown("<small>חיפוש מבוסס DuckDuckGo</small>", unsafe_allow_html=True)
