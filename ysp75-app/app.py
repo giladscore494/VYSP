@@ -63,11 +63,11 @@ def run_player_search():
         ysp_gross = app_extensions.calculate_ysp_score(row)
         st.metric("מדד YSP גולמי", ysp_gross)
 
-        # חישוב מדד YSP משוקלל כולל שווי שוק ידני, רגיש לשינוי הערך
+        # חישוב מדד YSP משוקלל כולל שווי שוק ידני, מחושב בכל שינוי הזנה
         ysp_weighted = app_extensions.calculate_fit_score(row, None, manual_market_value=manual_value)
         st.metric("מדד YSP משוקלל", ysp_weighted)
 
-        # שמירת החיפוש עם המדד המשוקלל בלבד
+        # שמירת החיפוש עם המדד המשוקלל בלבד (רגיש לשינוי שווי שוק)
         save_search(selected_player, ysp_weighted)
 
         # הזנת שם קבוצה (לבדיקה והתאמה)
