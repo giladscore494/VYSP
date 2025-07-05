@@ -282,22 +282,59 @@ def run_advanced_search_tab():
     # סינון מתקדם לפי נתונים מתאימים לעמדה
     if "GK" in pos_filter:
         possible_clr = [v for v in sorted(df["Clr"].unique()) if 0 <= v <= 100]
-        min_clr = st.select_slider("ניקויים (Clearances)", options=possible_clr, value=min(possible_clr))
-        filtered_df = filtered_df[filtered_df["Clr"] >= min_clr]
+        if possible_clr:
+            clr_range = st.select_slider(
+                "ניקויים (Clearances) - בחר טווח",
+                options=possible_clr,
+                value=(min(possible_clr), max(possible_clr))
+            )
+            filtered_df = filtered_df[
+                (filtered_df["Clr"] >= clr_range[0]) & (filtered_df["Clr"] <= clr_range[1])
+            ]
 
     elif "DF" in pos_filter:
         possible_tkl = [v for v in sorted(df["Tkl"].unique()) if 0 <= v <= 100]
-        min_tkl = st.select_slider("תיקולים", options=possible_tkl, value=min(possible_tkl))
         possible_blocks = [v for v in sorted(df["Blocks"].unique()) if 0 <= v <= 50]
-        min_blocks = st.select_slider("חסימות", options=possible_blocks, value=min(possible_blocks))
-        filtered_df = filtered_df[(filtered_df["Tkl"] >= min_tkl) & (filtered_df["Blocks"] >= min_blocks)]
+        if possible_tkl:
+            tkl_range = st.select_slider(
+                "תיקולים - בחר טווח",
+                options=possible_tkl,
+                value=(min(possible_tkl), max(possible_tkl))
+            )
+            filtered_df = filtered_df[
+                (filtered_df["Tkl"] >= tkl_range[0]) & (filtered_df["Tkl"] <= tkl_range[1])
+            ]
+        if possible_blocks:
+            blocks_range = st.select_slider(
+                "חסימות - בחר טווח",
+                options=possible_blocks,
+                value=(min(possible_blocks), max(possible_blocks))
+            )
+            filtered_df = filtered_df[
+                (filtered_df["Blocks"] >= blocks_range[0]) & (filtered_df["Blocks"] <= blocks_range[1])
+            ]
 
     elif "MF" in pos_filter or "FW" in pos_filter:
         possible_kp = [v for v in sorted(df["KP"].unique()) if 0 <= v <= 100]
-        min_kp = st.select_slider("מסירות מפתח", options=possible_kp, value=min(possible_kp))
         possible_dribbles = [v for v in sorted(df["Succ"].unique()) if 0 <= v <= 100]
-        min_dribbles = st.select_slider("דריבלים מוצלחים", options=possible_dribbles, value=min(possible_dribbles))
-        filtered_df = filtered_df[(filtered_df["KP"] >= min_kp) & (filtered_df["Succ"] >= min_dribbles)]
+        if possible_kp:
+            kp_range = st.select_slider(
+                "מסירות מפתח - בחר טווח",
+                options=possible_kp,
+                value=(min(possible_kp), max(possible_kp))
+            )
+            filtered_df = filtered_df[
+                (filtered_df["KP"] >= kp_range[0]) & (filtered_df["KP"] <= kp_range[1])
+            ]
+        if possible_dribbles:
+            dribbles_range = st.select_slider(
+                "דריבלים מוצלחים - בחר טווח",
+                options=possible_dribbles,
+                value=(min(possible_dribbles), max(possible_dribbles))
+            )
+            filtered_df = filtered_df[
+                (filtered_df["Succ"] >= dribbles_range[0]) & (filtered_df["Succ"] <= dribbles_range[1])
+            ]
 
     # סינון נוסף לפי גיל ו־xG צפוי עם טווחים קבועים מראש
     min_age = st.slider("גיל מינימלי", 15, 30, 17)
@@ -305,14 +342,18 @@ def run_advanced_search_tab():
 
     possible_xg = [round(v, 2) for v in sorted(set(df["xG"].dropna())) if 0.0 <= v <= 1.5]
     if possible_xg:
-        min_xg = st.select_slider("xG צפוי", options=possible_xg, value=min(possible_xg))
+        xg_range = st.select_slider(
+            "xG צפוי - בחר טווח",
+            options=possible_xg,
+            value=(min(possible_xg), max(possible_xg))
+        )
     else:
-        min_xg = 0.0
+        xg_range = (0.0, 1.5)
 
     filtered_df = filtered_df[
-        (filtered_df["Age"] >= min_age) & 
+        (filtered_df["Age"] >= min_age) &
         (filtered_df["Age"] <= max_age) &
-        (filtered_df["xG"] >= min_xg)
+        (filtered_df["xG"] >= xg_range[0]) & (filtered_df["xG"] <= xg_range[1])
     ]
 
     st.subheader(f"נמצאו {len(filtered_df)} שחקנים מתאימים")
