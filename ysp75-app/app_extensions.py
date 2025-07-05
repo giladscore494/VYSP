@@ -1,15 +1,15 @@
 import streamlit as st
-import urllib.parse
+import requests
 
 def match_text(query, text):
     return query.lower() in str(text).lower()
 
-def market_value_section(player_name: str) -> float | None:
+def market_value_section(player_name: str):
     st.markdown("---")
     st.subheader("הזן שווי שוק ידני לשחקן (אפשרי)")
 
     manual_value = st.number_input(
-        label=f"שווי שוק (במיליוני יורו) לשחקן {player_name}",
+        label=f"שווי שוק לשחקן {player_name} (הזן מספר במיליוני אירו, למשל 90 = 90 מיליון אירו)",
         min_value=0.0,
         step=0.1,
         format="%.2f",
@@ -18,17 +18,22 @@ def market_value_section(player_name: str) -> float | None:
     )
     if manual_value == 0.0:
         return None
-    # המרה למספר מלא (מיליוני יורו * 1,000,000)
-    return manual_value * 1_000_000
+    return manual_value * 1_000_000  # המרה למיליוני אירו לשווי אמיתי
 
-def get_transfermarkt_link(player_name: str) -> str | None:
-    # בניית שאילתה לחיפוש ב-DuckDuckGo עבור עמוד השחקן בטרנספרמרקט
-    query = f"site:transfermarkt.com {player_name}"
-    encoded_query = urllib.parse.quote_plus(query)
-    url = f"https://duckduckgo.com/?q={encoded_query}"
+def generate_transfermarkt_link(player_name: str) -> str:
+    import urllib.parse
+    query = urllib.parse.quote(player_name + " transfermarkt")
+    url = f"https://duckduckgo.com/?q={query}&ia=web"
     return url
 
-def calculate_fit_score(player_row, club_row, manual_market_value=None, exclude_market=False):
+def transfermarkt_link_section(player_name: str):
+    link = generate_transfermarkt_link(player_name)
+    st.markdown(f"""
+    [קישור לחיפוש העמוד של {player_name} ב-Transfermarkt דרך DuckDuckGo]({link})  
+    <small><i>הקישור נוצר דרך מנוע החיפוש DuckDuckGo</i></small>
+    """, unsafe_allow_html=True)
+
+def calculate_fit_score(player_row, club_row, manual_market_value=None):
     score = 0
     weights = {
         "style": 0.20,
@@ -140,22 +145,30 @@ def calculate_fit_score(player_row, club_row, manual_market_value=None, exclude_
         personal_score = 60
     score += personal_score * weights["personal_style"]
 
-    # חישוב ROI רק אם לא מבקשים להתעלם משווי שוק
-    if not exclude_market:
-        roi_score = 50
-        try:
-            base_value = manual_market_value if manual_market_value is not None else market_value
-            if base_value > 0 and future_value > 0:
-                roi = (future_value - base_value) / base_value
-                if roi >= 1.0:
-                    roi_score = 100
-                elif roi >= 0.5:
-                    roi_score = 80
-                elif roi >= 0.2:
-                    roi_score = 65
-            score += roi_score * weights["roi_factor"]
-        except:
-            pass
+    roi_score = 50
+    try:
+        base_value = manual_market_value if manual_market_value is not None else market_value
+        if base_value > 0 and future_value > 0:
+            roi = (future_value - base_value) / base_value
+            if roi >= 1.0:
+                roi_score = 100
+            elif roi >= 0.5:
+                roi_score = 80
+            elif roi >= 0.2:
+                roi_score = 65
+        score += roi_score * weights["roi_factor"]
+    except:
+        pass
+
+    # משקל שווי שוק לא יעלה על 220 מיליון שווה 100 ציון
+    max_market_value = 220_000_000
+    if manual_market_value is not None:
+        base_val = min(manual_market_value, max_market_value)
+    else:
+        base_val = min(market_value, max_market_value)
+    market_value_weight = (base_val / max_market_value) * 100 * 0.15  # משקל שווי שוק חלק מהמדד
+    # משקל הביצועים לפחות 85%
+    score = score * 0.85 + market_value_weight
 
     return round(min(score, 100), 2)
 
