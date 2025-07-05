@@ -260,4 +260,77 @@ def calculate_ysp_score(row):
 
     league_weight = league_weights.get(league.strip(), 0.9)
     ysp_score *= league_weight
-    return min(round(ysp_score, 2), 100)
+  return min(round(ysp_score, 2), 100)
+
+
+def run_advanced_search_tab():
+    import os
+    import pandas as pd
+    import streamlit as st
+
+    st.title("🔎 חיפוש מתקדם לפי ביצועים")
+
+    # טעינת קובץ נתונים
+    path = os.path.join("ysp75-app", "players_simplified_2025.csv")
+    df = pd.read_csv(path)
+    df.columns = df.columns.str.strip()
+
+    positions = sorted(df["Pos"].unique())
+    pos_filter = st.selectbox("בחר עמדה לסינון:", positions)
+
+    filtered_df = df[df["Pos"] == pos_filter]
+
+    # סינון מתקדם לפי נתונים מתאימים לעמדה - תמיד טווח קבוע!
+    if "GK" in pos_filter:
+        clr_range = st.slider("ניקויים (Clearances)", 0, 100, (0, 100))
+        filtered_df = filtered_df[
+            (filtered_df["Clr"] >= clr_range[0]) & (filtered_df["Clr"] <= clr_range[1])
+        ]
+    elif "DF" in pos_filter:
+        tkl_range = st.slider("תיקולים", 0, 100, (0, 100))
+        blocks_range = st.slider("חסימות", 0, 50, (0, 50))
+        filtered_df = filtered_df[
+            (filtered_df["Tkl"] >= tkl_range[0]) & (filtered_df["Tkl"] <= tkl_range[1]) &
+            (filtered_df["Blocks"] >= blocks_range[0]) & (filtered_df["Blocks"] <= blocks_range[1])
+        ]
+    elif "MF" in pos_filter or "FW" in pos_filter:
+        kp_range = st.slider("מסירות מפתח", 0, 100, (0, 100))
+        dribbles_range = st.slider("דריבלים מוצלחים", 0, 100, (0, 100))
+        filtered_df = filtered_df[
+            (filtered_df["KP"] >= kp_range[0]) & (filtered_df["KP"] <= kp_range[1]) &
+            (filtered_df["Succ"] >= dribbles_range[0]) & (filtered_df["Succ"] <= dribbles_range[1])
+        ]
+
+    # סינון נוסף לפי גיל ו־xG צפוי עם טווחים קבועים מראש
+    age_range = st.slider("טווח גילאים", 15, 30, (17, 24))
+    xg_range = st.slider("xG צפוי", 0.0, 1.5, (0.0, 1.5), step=0.01)
+    filtered_df = filtered_df[
+        (filtered_df["Age"] >= age_range[0]) & 
+        (filtered_df["Age"] <= age_range[1]) &
+        (filtered_df["xG"] >= xg_range[0]) & (filtered_df["xG"] <= xg_range[1])
+    ]
+
+    st.subheader(f"נמצאו {len(filtered_df)} שחקנים מתאימים")
+    for _, row in filtered_df.iterrows():
+        st.markdown(f"### {row['Player']} ({row['Age']}), {row['Pos']} - {row['Comp']}")
+        ysp = calculate_ysp_score(row)
+        st.write(f"🔢 מדד YSP: {ysp}")
+
+        # קישור ל־Transfermarkt
+        link = generate_transfermarkt_link(row["Player"])
+        st.markdown(f"[🔗 עמוד Transfermarkt]({link})")
+
+        # שווי שוק ו־ROI
+        market_value = st.number_input(
+            f"💶 הזן שווי שוק נוכחי ב-מיליון אירו עבור {row['Player']}",
+            min_value=0.0,
+            step=0.1,
+            format="%.2f",
+            key=f"mv_{row['Player']}"
+        )
+        if market_value > 0:
+            predicted = (ysp / 100) * 80 + 20
+            roi_label = "פוטנציאל רווח משמעותי" if predicted > market_value else "פוטנציאל רווח מתון או חסר"
+            st.write(f"💡 {roi_label} (YSP: {ysp}, שווי נוכחי: {market_value}M)")
+
+        st.markdown("---")
