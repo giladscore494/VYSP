@@ -1,7 +1,7 @@
 import streamlit as st
 import os
 import pandas as pd
-import app_extensions  # כאן ייבאנו את כל הפונקציות שהכנת בקובץ ההרחבה
+import app_extensions  # הקובץ החדש עם הפונקציות המשופרות
 from search_history import save_search, show_search_history
 
 # הגדרת עמוד
@@ -43,32 +43,38 @@ def run_player_search():
 
         row = df[df["Player"] == selected_player].iloc[0]
 
-        # --- הצגת קישור לטרנספרמרקט עם קרדיט ---
+        # חישוב מדד YSP-75 הגולמי (מבוסס ביצועים בלבד)
+        ysp_gross = app_extensions.calculate_ysp_score(row)
+        st.metric("מדד YSP-75 (גולמי)", ysp_gross)
+
+        # הצגת ביצועים
+        st.subheader(f"שחקן: {row['Player']}")
+        st.write(f"ליגה: {row['Comp']} | גיל: {row['Age']} | עמדה: {row['Pos']}")
+        st.write(f"דקות: {row['Min']} | גולים: {row['Gls']} | בישולים: {row['Ast']}")
+        st.write(f"דריבלים מוצלחים: {row['Succ']} | מסירות מפתח: {row['KP']}")
+
+        # הצגת קישור לטרנספרמרקט
         link = app_extensions.generate_transfermarkt_link(selected_player)
         if link:
             st.markdown(f"[עמוד {selected_player} ב-Transfermarkt]({link})")
             st.markdown("<sub>קישור דרך מנוע החיפוש DuckDuckGo עם fallback לגוגל</sub>", unsafe_allow_html=True)
         else:
             st.warning("לא נמצא קישור אוטומטי לעמוד הטרנספרמרקט של השחקן.")
-        
-        # --- הצגת ביצועי השחקן לפני הזנת שווי שוק ---
-        st.subheader(f"שחקן: {row['Player']}")
-        st.write(f"ליגה: {row['Comp']} | גיל: {row['Age']} | עמדה: {row['Pos']}")
-        st.write(f"דקות: {row['Min']} | גולים: {row['Gls']} | בישולים: {row['Ast']}")
-        st.write(f"דריבלים מוצלחים: {row['Succ']} | מסירות מפתח: {row['KP']}")
 
-        # --- חישוב מדד YSP-75 גולמי (ללא שווי שוק) ---
-        ysp_gross = app_extensions.calculate_ysp_score(row)
-        st.metric("מדד YSP-75 (גולמי)", ysp_gross)
-
-        # --- הזנת שווי שוק ידני (אירו במיליונים) ---
+        # הזנת שווי שוק ידני (אירו במיליונים)
         manual_market_value = app_extensions.market_value_section(selected_player)
 
-        # --- חישוב מדד YSP-75 משוקלל (כולל שווי שוק ידני) ---
-        ysp_weighted = app_extensions.calculate_ysp_score_weighted(row, manual_market_value)
-        st.metric("מדד YSP-75 (משוקלל עם שווי שוק)", ysp_weighted)
+        # חישוב מדד YSP-75 משוקלל (כולל שווי שוק)
+        ysp_weighted = ysp_gross
+        if manual_market_value is not None:
+            ysp_weighted = min(
+                100,
+                ysp_gross * 0.8 +  # משקל גבוה יותר לביצועים הגולמיים
+                (manual_market_value / 220) * 20  # משקל לשווי שוק עם מקסימום של 220 מיליון אירו
+            )
+        st.metric("מדד YSP-75 (משוקלל)", round(ysp_weighted, 2))
 
-        # --- הזנת שם קבוצה לבדיקת התאמה ---
+        # הזנת שם קבוצה להתאמה
         club_query = st.text_input("הקלד שם קבוצה (חלק מהשם):", key="club_input").strip().lower()
         matching_clubs = [c for c in clubs_df["Club"].unique() if app_extensions.match_text(club_query, c)]
 
@@ -77,6 +83,7 @@ def run_player_search():
             club_data = clubs_df[clubs_df["Club"] == selected_club]
             if not club_data.empty:
                 club_row = club_data.iloc[0]
+                # חישוב מדד התאמה לקבוצה ללא שווי שוק
                 fit_score = app_extensions.calculate_fit_score(player_row=row, club_row=club_row, manual_market_value=None)
                 st.metric("רמת התאמה חזויה לקבוצה", f"{fit_score}%")
                 if fit_score >= 85:
@@ -88,7 +95,7 @@ def run_player_search():
         elif club_query:
             st.warning("לא נמצאו קבוצות תואמות.")
 
-        # --- הצגת 10 המועדונים המתאימים ביותר לשחקן (ללא שקלול שווי שוק) ---
+        # הצגת 10 הקבוצות המתאימות ביותר ללא שקלול שווי שוק
         st.markdown("---")
         st.subheader("📊 10 המועדונים המתאימים ביותר לשחקן")
         scores = []
@@ -101,9 +108,9 @@ def run_player_search():
 
         st.bar_chart(top_df.set_index("Club"))
         csv = top_df.to_csv(index=False).encode('utf-8')
-        st.download_button("📥 הורד את כל ההתאמות כ־CSV", data=csv, file_name=f"{row['Player']}_club_fits.csv", mime='text/csv')
+        st.download_button("📥 הורד את כל ההתאמות כ־CSV", data=csv, file_name=f"{selected_player}_club_fits.csv", mime='text/csv')
 
-        # --- שמירת החיפוש עם המדד המשוקלל בלבד ---
+        # שמירת החיפוש עם המדד המשוקלל בלבד
         save_search(selected_player, ysp_weighted)
 
     else:
