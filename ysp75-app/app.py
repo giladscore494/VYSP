@@ -1,7 +1,7 @@
 import streamlit as st
 import os
 import pandas as pd
-import app_extensions
+import app_extensions  # הקובץ החדש עם הפונקציות המשופרות
 from search_history import save_search, show_search_history
 
 # הגדרת עמוד
@@ -43,71 +43,85 @@ def run_player_search():
 
         row = df[df["Player"] == selected_player].iloc[0]
 
-        # הצגת ביצועים ראשונית לפני הזנת שווי שוק
+        # חישוב מדד YSP-75 הגולמי (מבוסס ביצועים בלבד)
+        ysp_gross = app_extensions.calculate_ysp_score(row)
+        st.metric("מדד YSP-75 (גולמי)", ysp_gross)
+
+        # הצגת ביצועים
         st.subheader(f"שחקן: {row['Player']}")
         st.write(f"ליגה: {row['Comp']} | גיל: {row['Age']} | עמדה: {row['Pos']}")
         st.write(f"דקות: {row['Min']} | גולים: {row['Gls']} | בישולים: {row['Ast']}")
         st.write(f"דריבלים מוצלחים: {row['Succ']} | מסירות מפתח: {row['KP']}")
 
-        # קישור אוטומטי לעמוד השחקן בטרנספרמרקט
-        app_extensions.transfermarkt_link_section(row["Player"])
+        # הצגת קישור לטרנספרמרקט
+        link = app_extensions.generate_transfermarkt_link(selected_player)
+        if link:
+            st.markdown(f"[עמוד {selected_player} ב-Transfermarkt]({link})")
+            st.markdown("<sub>קישור דרך מנוע החיפוש DuckDuckGo עם fallback לגוגל</sub>", unsafe_allow_html=True)
+        else:
+            st.warning("לא נמצא קישור אוטומטי לעמוד הטרנספרמרקט של השחקן.")
 
-        # הזנת שווי שוק ידני בתוך טופס עם כפתור לחישוב מחדש
-        with st.form(key='market_value_form'):
-            manual_value = app_extensions.market_value_section(row["Player"])
-            submit_button = st.form_submit_button(label='חשב מדד משוקלל')
+        # הזנת שווי שוק ידני (אירו במיליונים)
+        manual_market_value = app_extensions.market_value_section(selected_player)
 
-        # חישוב המדד הגולמי
-        ysp_gross = app_extensions.calculate_ysp_score(row)
-        st.metric("מדד YSP-75 גולמי (ללא שווי שוק)", ysp_gross)
+        # חישוב מדד YSP-75 משוקלל (כולל שווי שוק)
+        ysp_weighted = ysp_gross
+        if manual_market_value is not None:
+            ysp_weighted = min(
+                100,
+                ysp_gross * 0.8 +  # משקל גבוה יותר לביצועים הגולמיים
+                (manual_market_value / 220) * 20  # משקל לשווי שוק עם מקסימום של 220 מיליון אירו
+            )
+        st.metric("מדד YSP-75 (משוקלל)", round(ysp_weighted, 2))
 
-        if submit_button:
-            ysp_weighted = app_extensions.calculate_fit_score(row, None, manual_market_value=manual_value)
-            st.metric("מדד YSP-75 משוקלל (כולל שווי שוק)", ysp_weighted)
+        # הזנת שם קבוצה להתאמה
+        club_query = st.text_input("הקלד שם קבוצה (חלק מהשם):", key="club_input").strip().lower()
+        matching_clubs = [c for c in clubs_df["Club"].unique() if app_extensions.match_text(club_query, c)]
 
-            # הזנת שם קבוצה לאחר חישוב משוקלל
-            club_query = st.text_input("הקלד שם קבוצה (חלק מהשם):", key="club_input").strip().lower()
-            matching_clubs = [c for c in clubs_df["Club"].unique() if app_extensions.match_text(club_query, c)]
+        if club_query and matching_clubs:
+            selected_club = st.selectbox("בחר קבוצה מתוך התוצאות:", matching_clubs)
+            club_data = clubs_df[clubs_df["Club"] == selected_club]
+            if not club_data.empty:
+                club_row = club_data.iloc[0]
+                # חישוב מדד התאמה לקבוצה ללא שווי שוק
+                fit_score = app_extensions.calculate_fit_score(player_row=row, club_row=club_row, manual_market_value=None)
+                st.metric("רמת התאמה חזויה לקבוצה", f"{fit_score}%")
+                if fit_score >= 85:
+                    st.success("התאמה מצוינת – סביר שיצליח במערכת הזו.")
+                elif fit_score >= 70:
+                    st.info("התאמה סבירה – עשוי להסתגל היטב.")
+                else:
+                    st.warning("התאמה נמוכה – דרושה התאמה טקטית או סבלנות.")
+        elif club_query:
+            st.warning("לא נמצאו קבוצות תואמות.")
 
-            if club_query and matching_clubs:
-                selected_club = st.selectbox("בחר קבוצה מתוך התוצאות:", matching_clubs)
-                club_data = clubs_df[clubs_df["Club"] == selected_club]
-                if not club_data.empty:
-                    club_row = club_data.iloc[0]
-                    fit_score = app_extensions.calculate_fit_score(player_row=row, club_row=club_row)
-                    st.metric("רמת התאמה חזויה לקבוצה", f"{fit_score}%")
-                    if fit_score >= 85:
-                        st.success("התאמה מצוינת – סביר שיצליח במערכת הזו.")
-                    elif fit_score >= 70:
-                        st.info("התאמה סבירה – עשוי להסתגל היטב.")
-                    else:
-                        st.warning("התאמה נמוכה – דרושה התאמה טקטית או סבלנות.")
-            elif club_query:
-                st.warning("לא נמצאו קבוצות תואמות.")
+        # הצגת 10 הקבוצות המתאימות ביותר ללא שקלול שווי שוק
+        st.markdown("---")
+        st.subheader("📊 10 המועדונים המתאימים ביותר לשחקן")
+        scores = []
+        for i, club_row in clubs_df.iterrows():
+            score = app_extensions.calculate_fit_score(player_row=row, club_row=club_row, manual_market_value=None)
+            scores.append((club_row["Club"], score))
+        scores.sort(key=lambda x: x[1], reverse=True)
+        top_scores = scores[:10]
+        top_df = pd.DataFrame(top_scores, columns=["Club", "Fit Score"])
 
-            # הצגת 10 המועדונים המתאימים ביותר
-            st.markdown("---")
-            st.subheader("📊 10 המועדונים המתאימים ביותר לשחקן")
-            scores = []
-            for i, club_row in clubs_df.iterrows():
-                score = app_extensions.calculate_fit_score(player_row=row, club_row=club_row)
-                scores.append((club_row["Club"], score))
-            scores.sort(key=lambda x: x[1], reverse=True)
-            top_scores = scores[:10]
-            top_df = pd.DataFrame(top_scores, columns=["Club", "Fit Score"])
+        st.bar_chart(top_df.set_index("Club"))
+        csv = top_df.to_csv(index=False).encode('utf-8')
+        st.download_button("📥 הורד את כל ההתאמות כ־CSV", data=csv, file_name=f"{selected_player}_club_fits.csv", mime='text/csv')
 
-            st.bar_chart(top_df.set_index("Club"))
-            csv = top_df.to_csv(index=False).encode('utf-8')
-            st.download_button("📥 הורד את כל ההתאמות כ־CSV", data=csv, file_name=f"{row['Player']}_club_fits.csv", mime='text/csv')
-# ...
-if st.button("חשב מדד משוקלל"):
-    ysp_weighted = app_extensions.calculate_weighted_ysp_score(row, manual_value)
-    st.metric("מדד YSP משוקלל", ysp_weighted)
+        # שמירת החיפוש עם המדד המשוקלל בלבד
+        save_search(selected_player, ysp_weighted)
 
-    # שמירת חיפוש עם המדד המשוקלל בלבד
-    save_search(selected_player, ysp_weighted)
+    else:
+        if player_query:
+            st.warning("שחקן לא נמצא. נסה שם מדויק או חלק ממנו.")
 
-    # כאן נוספים שאר הקודים להצגת מדד התאמה לקבוצה ו-10 הקבוצות המתאימות
-else:
-    # במקרה שלא נלחץ הכפתור, לא מוצג מדד משוקלל, לא מציג התאמה וקבוצות
-    st.info("הזן שווי שוק ולחץ על 'חשב מדד משוקלל' כדי לראות את ההתאמה לקבוצה ולמועדונים.")
+    st.caption("הנתונים מבוססים על ניתוח אלגוריתמי לצרכים חינוכיים ואנליטיים בלבד.")
+
+mode = st.sidebar.radio("בחר מצב:", ("חיפוש שחקנים", "היסטוריית חיפושים"))
+
+if mode == "חיפוש שחקנים":
+    run_player_search()
+elif mode == "היסטוריית חיפושים":
+    show_search_history()
