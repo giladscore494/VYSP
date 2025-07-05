@@ -1,15 +1,11 @@
 import streamlit as st
-import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 import urllib.parse
 
-# --- פונקציית התאמה כללית לטקסט ---
 def match_text(query, text):
     return query.lower() in str(text).lower()
 
-
-# --- יצירת קישור ל־Transfermarkt ---
 def generate_transfermarkt_link(player_name: str) -> str | None:
     query = f"site:transfermarkt.com {player_name}"
     ddg_url = f"https://duckduckgo.com/html/?q={urllib.parse.quote_plus(query)}"
@@ -33,22 +29,151 @@ def generate_transfermarkt_link(player_name: str) -> str | None:
     google_search = f"https://www.google.com/search?q=site:transfermarkt.com+{urllib.parse.quote_plus(player_name)}"
     return google_search
 
-
-# --- הזנת שווי שוק ידני ---
 def market_value_section(player_name: str) -> float | None:
     st.markdown("---")
     st.subheader("הזן שווי שוק ידני לשחקן (אירו במיליונים)")
+
     manual_value = st.number_input(
         label=f"שווי שוק (במיליוני אירו) לשחקן {player_name}",
         min_value=0.0,
         step=1.0,
         format="%.1f",
+        help="אם לא תזין ערך, השווי האוטומטי מהמאגר ישמש בחישוב.",
         key=f"manual_value_{player_name}"
     )
-    return None if manual_value == 0.0 else manual_value
+    if manual_value == 0.0:
+        return None
+    return manual_value
 
+def calculate_fit_score(player_row, club_row, manual_market_value=None):
+    score = 0
+    weights = {
+        "style": 0.20,
+        "pressing": 0.15,
+        "def_line": 0.10,
+        "xg_match": 0.15,
+        "pass_match": 0.10,
+        "formation_role": 0.15,
+        "age_dynamics": 0.05,
+        "personal_style": 0.05,
+        "roi_factor": 0.05
+    }
 
-# --- חישוב מדד YSP ---
+    position = str(player_row["Pos"])
+    minutes = player_row["Min"]
+    goals = player_row["Gls"]
+    assists = player_row["Ast"]
+    dribbles = player_row["Succ"]
+    key_passes = player_row["KP"]
+    xg = player_row.get("xG", 0)
+    xag = player_row.get("xAG", 0)
+    age = player_row["Age"]
+    market_value = player_row.get("MarketValue", 0)
+    future_value = player_row.get("FutureValue", 0)
+
+    if club_row is not None:
+        formation = club_row["Common Formation"]
+        style = club_row["Playing Style"]
+        press = club_row["Pressing Style"]
+        def_line = club_row["Defensive Line Depth"]
+        pass_acc = club_row["Pass Accuracy (%)"]
+        team_xg = club_row["Team xG per Match"]
+    else:
+        formation = ""
+        style = ""
+        press = ""
+        def_line = ""
+        pass_acc = 0
+        team_xg = 0
+
+    style_score = 50
+    if "Attacking" in style and "FW" in position:
+        style_score = 100
+    elif "Balanced" in style and "MF" in position:
+        style_score = 100
+    elif "Low Block" in style and "DF" in position:
+        style_score = 90
+    score += style_score * weights["style"]
+
+    press_score = 50
+    if "High Press" in press and "FW" in position:
+        press_score = 100
+    elif "Mid Block" in press and "MF" in position:
+        press_score = 80
+    score += press_score * weights["pressing"]
+
+    def_score = 50
+    if "High" in def_line and "DF" in position:
+        def_score = 100
+    elif "Medium" in def_line and "MF" in position:
+        def_score = 80
+    score += def_score * weights["def_line"]
+
+    xg_score = 50
+    if team_xg >= 1.8 and "FW" in position and goals >= 5:
+        xg_score = 100
+    elif team_xg <= 1.2 and "DF" in position:
+        xg_score = 100
+    elif team_xg >= 1.4 and "MF" in position:
+        xg_score = 80
+    score += xg_score * weights["xg_match"]
+
+    pass_score = 50
+    try:
+        player_pass_style = (key_passes + dribbles) / (minutes / 90 + 1e-6)
+        if pass_acc >= 87 and player_pass_style >= 2.5:
+            pass_score = 100
+        elif pass_acc <= 82 and player_pass_style < 1.5:
+            pass_score = 90
+        elif pass_acc >= 85 and player_pass_style >= 1.5:
+            pass_score = 80
+    except:
+        pass
+    score += pass_score * weights["pass_match"]
+
+    form_score = 50
+    if "4-3-3" in formation and "FW" in position:
+        form_score = 100
+    elif "4-2-3-1" in formation and "MF" in position:
+        form_score = 100
+    elif "3-5-2" in formation and "DF" in position:
+        form_score = 100
+    score += form_score * weights["formation_role"]
+
+    age_score = 50
+    if age <= 20 and "Attacking" in style:
+        age_score = 100
+    elif age <= 23:
+        age_score = 80
+    score += age_score * weights["age_dynamics"]
+
+    personal_score = 50
+    personal_index = ((goals + assists) + dribbles * 0.5 + key_passes * 0.5 + xg * 2 + xag) / (minutes / 90 + 1e-6)
+    if personal_index >= 3.5:
+        personal_score = 100
+    elif personal_index >= 2.0:
+        personal_score = 80
+    elif personal_index <= 1.0:
+        personal_score = 60
+    score += personal_score * weights["personal_style"]
+
+    roi_score = 50
+    try:
+        base_value = manual_market_value if manual_market_value is not None else market_value
+        if base_value > 0 and future_value > 0:
+            roi = (future_value - base_value) / base_value
+            if roi >= 1.0:
+                roi_score = 100
+            elif roi >= 0.5:
+                roi_score = 80
+            elif roi >= 0.2:
+                roi_score = 65
+        score += roi_score * weights["roi_factor"]
+    except:
+        pass
+
+    return round(min(score, 100), 2)
+
 def calculate_ysp_score(row):
     position = str(row["Pos"])
     minutes = row["Min"]
@@ -136,60 +261,3 @@ def calculate_ysp_score(row):
     league_weight = league_weights.get(league.strip(), 0.9)
     ysp_score *= league_weight
     return min(round(ysp_score, 2), 100)
-
-
-# --- טאאב לחיפוש מתקדם ---
-def run_advanced_search_tab():
-    st.title("🔎 חיפוש מתקדם לפי ביצועים")
-
-    # טעינת קובץ נתונים
-    path = os.path.join("ysp75-app", "players_simplified_2025.csv")
-    df = pd.read_csv(path)
-    df.columns = df.columns.str.strip()
-
-    positions = sorted(df["Pos"].unique())
-    pos_filter = st.selectbox("בחר עמדה לסינון:", positions)
-
-    filtered_df = df[df["Pos"] == pos_filter]
-
-    # סינון מתקדם לפי נתונים מתאימים לעמדה
-    if "GK" in pos_filter:
-        min_clr = st.slider("ניקויים (Clearances)", 0, 100, 10)
-        filtered_df = filtered_df[filtered_df["Clr"] >= min_clr]
-    elif "DF" in pos_filter:
-        min_tkl = st.slider("תיקולים", 0, 100, 20)
-        min_blocks = st.slider("חסימות", 0, 50, 5)
-        filtered_df = filtered_df[(filtered_df["Tkl"] >= min_tkl) & (filtered_df["Blocks"] >= min_blocks)]
-    elif "MF" in pos_filter or "FW" in pos_filter:
-        min_kp = st.slider("מסירות מפתח", 0, 100, 10)
-        min_dribbles = st.slider("דריבלים מוצלחים", 0, 100, 10)
-        filtered_df = filtered_df[(filtered_df["KP"] >= min_kp) & (filtered_df["Succ"] >= min_dribbles)]
-
-    # סינון נוסף לפי גיל ו־xG צפוי
-    min_age = st.slider("גיל מינימלי", 15, 30, 17)
-    max_age = st.slider("גיל מקסימלי", 18, 30, 24)
-    min_xg = st.slider("xG צפוי", 0.0, 1.5, 0.3)
-    filtered_df = filtered_df[
-        (filtered_df["Age"] >= min_age) & 
-        (filtered_df["Age"] <= max_age) &
-        (filtered_df["xG"] >= min_xg)
-    ]
-
-    st.subheader(f"נמצאו {len(filtered_df)} שחקנים מתאימים")
-    for _, row in filtered_df.iterrows():
-        st.markdown(f"### {row['Player']} ({row['Age']}), {row['Pos']} - {row['Comp']}")
-        ysp = calculate_ysp_score(row)
-        st.write(f"🔢 מדד YSP: {ysp}")
-
-        # קישור ל־Transfermarkt
-        link = generate_transfermarkt_link(row["Player"])
-        st.markdown(f"[🔗 עמוד Transfermarkt]({link})")
-
-        # שווי שוק ו־ROI
-        market_value = st.number_input(f"💶 הזן שווי שוק נוכחי ב-מיליון אירו עבור {row['Player']}", min_value=0.0, step=0.1, format="%.2f", key=f"mv_{row['Player']}")
-        if market_value > 0:
-            predicted = (ysp / 100) * 80 + 20
-            roi_label = "פוטנציאל רווח משמעותי" if predicted > market_value else "פוטנציאל רווח מתון או חסר"
-            st.write(f"💡 {roi_label} (YSP: {ysp}, שווי נוכחי: {market_value}M)")
-
-        st.markdown("---")
