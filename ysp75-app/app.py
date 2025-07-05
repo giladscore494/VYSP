@@ -1,8 +1,9 @@
 import streamlit as st
 import os
 import pandas as pd
-import app_extensions  # הקובץ החדש עם הפונקציות המשופרות
+from app_extensions import run_advanced_search_tab_embed  # מייבא רק את הפונקציה הרלוונטית
 from search_history import save_search, show_search_history
+import app_extensions  # אם אתה משתמש בפונקציות נוספות מתוך app_extensions, תשאיר גם את זה
 
 # הגדרת עמוד
 st.set_page_config(page_title="FstarVfootball", layout="wide")
