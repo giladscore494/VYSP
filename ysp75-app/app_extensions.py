@@ -261,26 +261,14 @@ def calculate_ysp_score(row):
     league_weight = league_weights.get(league.strip(), 0.9)
     ysp_score *= league_weight
     return min(round(ysp_score, 2), 100)
-st.subheader(f"נמצאו {len(filtered)} שחקנים מתאימים")
-max_to_show = 100  # אתה יכול להעלות/להוריד את זה
-for idx, row in filtered.head(max_to_show).iterrows():
-    st.markdown(f"**{row['Player']}** | גיל: {row['Age']} | עמדה: {row['Pos']} | דקות: {row['Min']}")
-    ysp = calculate_ysp_score(row)
-    st.markdown(f"✳️ מדד YSP: {ysp}")
-    link = generate_transfermarkt_link(row["Player"])
-    st.markdown(f"🔗 [עמוד Transfermarkt של {row['Player']}]({link})")
-    market_value = st.number_input(
-        f"💶 הזן שווי שוק נוכחי ב-מיליון אירו עבור {row['Player']}",
-        key=f"mv_{idx}_{row['Player']}",
-        min_value=0.0, step=0.1, format="%.2f"
+import streamlit as st
+
+def run_advanced_search_tab_embed():
+    st.title("🔎 חיפוש מתקדם (הטמעה)")
+    st.info("החיפוש המתקדם נטען כמיני-אפליקציה חיצונית (embed).")
+    st.components.v1.iframe(
+        "https://fstarv-search-7ctjt8skkag7jd9aq6vicm.streamlit.app/",
+        width=1100,
+        height=1000,
+        scrolling=True
     )
-    if market_value > 0:
-        future_value = (ysp / 100) * 100
-        if future_value > market_value:
-            roi_text = "פוטנציאל גבוה משמעותית לעומת השווי הנוכחי"
-        elif future_value == market_value:
-            roi_text = "שווי השחקן תואם את הפוטנציאל הנוכחי"
-        else:
-            roi_text = "השווי הנוכחי גבוה מהפוטנציאל - סיכון השקעה"
-        st.markdown(f"📈 ROI: {roi_text}")
-    st.markdown("---")
