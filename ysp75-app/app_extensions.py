@@ -1,52 +1,26 @@
 import streamlit as st
-import urllib.parse
 
 def match_text(query, text):
     return query.lower() in str(text).lower()
 
 def market_value_section(player_name: str) -> float | None:
     st.markdown("---")
-    st.subheader("הזן שווי שוק ידני לשחקן (אפשרי)")
+    st.subheader("הזן שווי שוק ידני לשחקן (אפשרי, במיליוני אירו)")
 
     manual_value = st.number_input(
-        label=f"שווי שוק (באירו) לשחקן {player_name}",
+        label=f"שווי שוק (במיליוני אירו) לשחקן {player_name}",
         min_value=0.0,
-        step=100000.0,
+        step=0.1,
         format="%.2f",
         help="אם לא תזין ערך, השווי האוטומטי מהמאגר ישמש בחישוב.",
         key=f"manual_value_{player_name}"
     )
     if manual_value == 0.0:
         return None
-    # המרה למיליוני אירו אם המשתמש הזין ערך כמו 90 (למשל)
-    if manual_value >= 90 and manual_value < 1000:
-        manual_value = manual_value * 1_000_000
-    return manual_value
-
-def generate_transfermarkt_search_url(player_name: str) -> str:
-    query = f"site:transfermarkt.com {player_name}"
-    encoded_query = urllib.parse.quote_plus(query)
-    return f"https://duckduckgo.com/?q={encoded_query}"
-
-def show_transfermarkt_link(player_name: str):
-    url = generate_transfermarkt_search_url(player_name)
-    link_html = f'''
-    <div style="margin-top:10px; margin-bottom:5px;">
-        <a href="{url}" target="_blank" style="font-weight:bold; font-size:18px; color:#1a73e8; text-decoration:none;">
-            עמוד שחקן ב-Transfermarkt: {player_name}
-        </a>
-    </div>
-    '''
-    credit_html = '''
-    <div style="font-size:10px; color:gray; font-style:italic;">
-        חיפוש אוטומטי באמצעות מנוע DuckDuckGo
-    </div>
-    '''
-    st.markdown(link_html, unsafe_allow_html=True)
-    st.markdown(credit_html, unsafe_allow_html=True)
+    # המרה למספר במליון אירו
+    return manual_value * 1_000_000
 
 def calculate_ysp_score(row):
-    # הקוד המלא לחישוב YSP-75 הגולמי כפי שהיה בקוד המקורי
     position = str(row["Pos"])
     minutes = row["Min"]
     goals = row["Gls"]
@@ -134,26 +108,29 @@ def calculate_ysp_score(row):
     ysp_score *= league_weight
     return min(round(ysp_score, 2), 100)
 
-def calculate_weighted_ysp_score(row, manual_market_value=None):
-    # משקלל את מדד YSP עם שווי שוק (כמו שהוסבר)
-    gross_score = calculate_ysp_score(row)
+def calculate_ysp_score_weighted(row, manual_market_value=None):
+    base_score = calculate_ysp_score(row)
     market_value = row.get("MarketValue", 0)
-    if manual_market_value is not None:
-        market_value = manual_market_value
-    # ניקח שווי שוק מרבי של 220 מיליון אירו (לשקלול)
-    max_market_value = 220_000_000
-    market_value_ratio = min(market_value / max_market_value, 1.0)
+    future_value = row.get("FutureValue", 0)
 
-    # משקל גבוה יותר לביצועים הגולמיים (70%), ושווי שוק (30%)
-    weighted_score = gross_score * 0.7 + (market_value_ratio * 100) * 0.3
+    base_value = manual_market_value if manual_market_value is not None else market_value
 
-    # אם הגולמי 100 והשווי מעל 90 מיליון => שומר על 100 (כפי שביקשת)
-    if gross_score >= 100 and market_value >= 90_000_000:
-        weighted_score = 100
+    # משקל גבוה יותר לביצועים גולמיים לעומת שווי שוק
+    weight_perf = 0.8
+    weight_market = 0.2
 
+    roi_score = 0
+    if base_value > 0 and future_value > 0:
+        roi = (future_value - base_value) / base_value
+        # נרמול בין 0 ל-1 ל-ROI (קיצוני ל-1.0)
+        roi_score = min(roi, 1.0)
+
+    weighted_score = base_score * weight_perf + roi_score * 100 * weight_market
+
+    # שמירה שהציון לא יעבור 100
     return round(min(weighted_score, 100), 2)
 
-def calculate_fit_score(player_row, club_row, manual_market_value=None):
+def calculate_fit_score(player_row, club_row):
     score = 0
     weights = {
         "style": 0.20,
@@ -163,8 +140,7 @@ def calculate_fit_score(player_row, club_row, manual_market_value=None):
         "pass_match": 0.10,
         "formation_role": 0.15,
         "age_dynamics": 0.05,
-        "personal_style": 0.05,
-        # שווי שוק לא כולל בהתאמה לקבוצה
+        "personal_style": 0.10
     }
 
     position = str(player_row["Pos"])
@@ -177,20 +153,12 @@ def calculate_fit_score(player_row, club_row, manual_market_value=None):
     xag = player_row.get("xAG", 0)
     age = player_row["Age"]
 
-    if club_row is not None:
-        formation = club_row["Common Formation"]
-        style = club_row["Playing Style"]
-        press = club_row["Pressing Style"]
-        def_line = club_row["Defensive Line Depth"]
-        pass_acc = club_row["Pass Accuracy (%)"]
-        team_xg = club_row["Team xG per Match"]
-    else:
-        formation = ""
-        style = ""
-        press = ""
-        def_line = ""
-        pass_acc = 0
-        team_xg = 0
+    formation = club_row["Common Formation"]
+    style = club_row["Playing Style"]
+    press = club_row["Pressing Style"]
+    def_line = club_row["Defensive Line Depth"]
+    pass_acc = club_row["Pass Accuracy (%)"]
+    team_xg = club_row["Team xG per Match"]
 
     style_score = 50
     if "Attacking" in style and "FW" in position:
