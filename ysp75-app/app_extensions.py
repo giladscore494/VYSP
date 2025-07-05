@@ -1,40 +1,7 @@
-import requests
-import re
 import streamlit as st
 
-def search_transfermarkt_link(player_name: str) -> str | None:
-    """
-    מחפש קישור לעמוד שחקן ב-Transfermarkt דרך DuckDuckGo ו-Google (fallback).
-    מחזיר את הקישור אם נמצא, אחרת None.
-    """
-    headers = {"User-Agent": "Mozilla/5.0"}
-    query = f"site:transfermarkt.com {player_name}"
-    url_duck = f"https://duckduckgo.com/html/?q={query}"
-
-    try:
-        # חיפוש ב-DuckDuckGo
-        res = requests.get(url_duck, headers=headers, timeout=5)
-        if res.status_code == 200:
-            html = res.text
-            links = re.findall(r'<a rel="nofollow" class="result__a" href="([^"]+)"', html)
-            for link in links:
-                if "transfermarkt.com" in link:
-                    return link
-
-        # פולבק לגוגל אם לא נמצא בדאק דאק
-        url_google = f"https://www.google.com/search?q={query}"
-        res = requests.get(url_google, headers=headers, timeout=5)
-        if res.status_code == 200:
-            html = res.text
-            links = re.findall(r'<a href="(/url\?q=https://www.transfermarkt.com[^&"]+)', html)
-            for link in links:
-                clean_link = link.split("&")[0].replace("/url?q=", "")
-                if "transfermarkt.com" in clean_link:
-                    return clean_link
-    except Exception as e:
-        st.error(f"שגיאה בחיפוש קישור Transfermarkt: {e}")
-        return None
-    return None
+def match_text(query, text):
+    return query.lower() in str(text).lower()
 
 def market_value_section(player_name: str) -> float | None:
     st.markdown("---")
@@ -268,3 +235,8 @@ def calculate_ysp_score(row):
     league_weight = league_weights.get(league.strip(), 0.9)
     ysp_score *= league_weight
     return min(round(ysp_score, 2), 100)
+
+def generate_transfermarkt_search_link(player_name: str) -> str:
+    import urllib.parse
+    query = urllib.parse.quote_plus(f"{player_name} site:transfermarkt.com")
+    return f"https://duckduckgo.com/?q={query}"
