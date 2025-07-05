@@ -281,21 +281,34 @@ def run_advanced_search_tab():
 
     # סינון מתקדם לפי נתונים מתאימים לעמדה
     if "GK" in pos_filter:
-        min_clr = st.slider("ניקויים (Clearances)", 0, 100, 10)
+        possible_clr = [v for v in sorted(df["Clr"].unique()) if 0 <= v <= 100]
+        min_clr = st.select_slider("ניקויים (Clearances)", options=possible_clr, value=min(possible_clr))
         filtered_df = filtered_df[filtered_df["Clr"] >= min_clr]
+
     elif "DF" in pos_filter:
-        min_tkl = st.slider("תיקולים", 0, 100, 20)
-        min_blocks = st.slider("חסימות", 0, 50, 5)
+        possible_tkl = [v for v in sorted(df["Tkl"].unique()) if 0 <= v <= 100]
+        min_tkl = st.select_slider("תיקולים", options=possible_tkl, value=min(possible_tkl))
+        possible_blocks = [v for v in sorted(df["Blocks"].unique()) if 0 <= v <= 50]
+        min_blocks = st.select_slider("חסימות", options=possible_blocks, value=min(possible_blocks))
         filtered_df = filtered_df[(filtered_df["Tkl"] >= min_tkl) & (filtered_df["Blocks"] >= min_blocks)]
+
     elif "MF" in pos_filter or "FW" in pos_filter:
-        min_kp = st.slider("מסירות מפתח", 0, 100, 10)
-        min_dribbles = st.slider("דריבלים מוצלחים", 0, 100, 10)
+        possible_kp = [v for v in sorted(df["KP"].unique()) if 0 <= v <= 100]
+        min_kp = st.select_slider("מסירות מפתח", options=possible_kp, value=min(possible_kp))
+        possible_dribbles = [v for v in sorted(df["Succ"].unique()) if 0 <= v <= 100]
+        min_dribbles = st.select_slider("דריבלים מוצלחים", options=possible_dribbles, value=min(possible_dribbles))
         filtered_df = filtered_df[(filtered_df["KP"] >= min_kp) & (filtered_df["Succ"] >= min_dribbles)]
 
-    # סינון נוסף לפי גיל ו־xG צפוי
+    # סינון נוסף לפי גיל ו־xG צפוי עם טווחים קבועים מראש
     min_age = st.slider("גיל מינימלי", 15, 30, 17)
     max_age = st.slider("גיל מקסימלי", 18, 30, 24)
-    min_xg = st.slider("xG צפוי", 0.0, 1.5, 0.3)
+
+    possible_xg = [round(v, 2) for v in sorted(set(df["xG"].dropna())) if 0.0 <= v <= 1.5]
+    if possible_xg:
+        min_xg = st.select_slider("xG צפוי", options=possible_xg, value=min(possible_xg))
+    else:
+        min_xg = 0.0
+
     filtered_df = filtered_df[
         (filtered_df["Age"] >= min_age) & 
         (filtered_df["Age"] <= max_age) &
