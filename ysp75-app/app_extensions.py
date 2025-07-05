@@ -326,7 +326,7 @@ def run_advanced_search_tab():
             min_value=0.0,
             step=0.1,
             format="%.2f",
-            key=f"mv_{row['Player']}_{idx}"
+            key=f"mv_{idx}"
         )
         if market_value > 0:
             predicted = (ysp / 100) * 80 + 20
