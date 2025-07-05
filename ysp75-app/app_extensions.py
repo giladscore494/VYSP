@@ -1,37 +1,49 @@
 import streamlit as st
 import requests
+from bs4 import BeautifulSoup
+import urllib.parse
 
 def match_text(query, text):
     return query.lower() in str(text).lower()
 
-def market_value_section(player_name: str):
+def generate_transfermarkt_link(player_name: str) -> str | None:
+    query = f"site:transfermarkt.com {player_name}"
+    ddg_url = f"https://duckduckgo.com/html/?q={urllib.parse.quote_plus(query)}"
+    try:
+        res = requests.get(ddg_url, headers={"User-Agent": "Mozilla/5.0"})
+        if res.status_code == 200:
+            soup = BeautifulSoup(res.text, 'html.parser')
+            results = soup.find_all("a", class_="result__a", href=True)
+            for a in results:
+                href = a['href']
+                if "transfermarkt.com" in href:
+                    if href.startswith("/l/?kh="):
+                        parsed = urllib.parse.urlparse(href)
+                        q = urllib.parse.parse_qs(parsed.query).get('uddg', [None])[0]
+                        if q:
+                            return q
+                    else:
+                        return href
+    except Exception:
+        pass
+    google_search = f"https://www.google.com/search?q=site:transfermarkt.com+{urllib.parse.quote_plus(player_name)}"
+    return google_search
+
+def market_value_section(player_name: str) -> float | None:
     st.markdown("---")
-    st.subheader("הזן שווי שוק ידני לשחקן (אפשרי)")
+    st.subheader("הזן שווי שוק ידני לשחקן (אירו במיליונים)")
 
     manual_value = st.number_input(
-        label=f"שווי שוק לשחקן {player_name} (הזן מספר במיליוני אירו, למשל 90 = 90 מיליון אירו)",
+        label=f"שווי שוק (במיליוני אירו) לשחקן {player_name}",
         min_value=0.0,
-        step=0.1,
-        format="%.2f",
+        step=1.0,
+        format="%.1f",
         help="אם לא תזין ערך, השווי האוטומטי מהמאגר ישמש בחישוב.",
         key=f"manual_value_{player_name}"
     )
     if manual_value == 0.0:
         return None
-    return manual_value * 1_000_000  # המרה למיליוני אירו לשווי אמיתי
-
-def generate_transfermarkt_link(player_name: str) -> str:
-    import urllib.parse
-    query = urllib.parse.quote(player_name + " transfermarkt")
-    url = f"https://duckduckgo.com/?q={query}&ia=web"
-    return url
-
-def transfermarkt_link_section(player_name: str):
-    link = generate_transfermarkt_link(player_name)
-    st.markdown(f"""
-    [קישור לחיפוש העמוד של {player_name} ב-Transfermarkt דרך DuckDuckGo]({link})  
-    <small><i>הקישור נוצר דרך מנוע החיפוש DuckDuckGo</i></small>
-    """, unsafe_allow_html=True)
+    return manual_value
 
 def calculate_fit_score(player_row, club_row, manual_market_value=None):
     score = 0
@@ -159,16 +171,6 @@ def calculate_fit_score(player_row, club_row, manual_market_value=None):
         score += roi_score * weights["roi_factor"]
     except:
         pass
-
-    # משקל שווי שוק לא יעלה על 220 מיליון שווה 100 ציון
-    max_market_value = 220_000_000
-    if manual_market_value is not None:
-        base_val = min(manual_market_value, max_market_value)
-    else:
-        base_val = min(market_value, max_market_value)
-    market_value_weight = (base_val / max_market_value) * 100 * 0.15  # משקל שווי שוק חלק מהמדד
-    # משקל הביצועים לפחות 85%
-    score = score * 0.85 + market_value_weight
 
     return round(min(score, 100), 2)
 
