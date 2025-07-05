@@ -1,36 +1,119 @@
 import streamlit as st
-import urllib.parse
+import pandas as pd
 
 def match_text(query, text):
     return query.lower() in str(text).lower()
 
 def market_value_section(player_name: str) -> float | None:
     st.markdown("---")
-    st.subheader("הזן שווי שוק ידני לשחקן (באירו)")
+    st.subheader("הזן שווי שוק ידני לשחקן (באירו, למשל 90 = 90 מיליון אירו)")
 
     manual_value = st.number_input(
-        label=f"שווי שוק ידני (באירו) לשחקן {player_name} (הזן 90 = 90 מיליון אירו)",
+        label=f"שווי שוק לשחקן {player_name} (מיליוני אירו):",
         min_value=0.0,
-        step=1_000_000.0,
+        step=1.0,
         format="%.2f",
         help="אם לא תזין ערך, השווי האוטומטי מהמאגר ישמש בחישוב.",
         key=f"manual_value_{player_name}"
     )
     if manual_value == 0.0:
         return None
-
-    # אם הערך בין 1 ל-100, מניחים שזה מיליון אירו
-    if manual_value > 0 and manual_value < 100:
-        manual_value *= 1_000_000
-
+    # אם הזנת מספר קטן מ-100 נחשב מיליון אירו (90 = 90 מיליון אירו)
+    if manual_value < 100:
+        manual_value = manual_value * 1_000_000
+    else:
+        manual_value = manual_value * 1_000_000
     return manual_value
 
-def generate_transfermarkt_search_link(player_name: str) -> str:
-    base_url = "https://duckduckgo.com/?q="
-    query = f"site:transfermarkt.com {player_name}"
-    return base_url + urllib.parse.quote(query)
+def calculate_ysp_score(row):
+    position = str(row["Pos"])
+    minutes = row["Min"]
+    goals = row["Gls"]
+    assists = row["Ast"]
+    dribbles = row["Succ"]
+    key_passes = row["KP"]
+    tackles = row["Tkl"]
+    interceptions = row["Int"]
+    clearances = row["Clr"]
+    blocks = row["Blocks"]
+    age = row["Age"]
+    league = row["Comp"]
 
-def calculate_fit_score(player_row, club_row, use_market_value=False):
+    benchmarks = {
+        "GK": {"Min": 3000, "Clr": 30, "Tkl": 10, "Blocks": 15},
+        "DF": {"Tkl": 50, "Int": 50, "Clr": 120, "Blocks": 30, "Min": 3000, "Gls": 3, "Ast": 2},
+        "MF": {"Gls": 10, "Ast": 10, "Succ": 50, "KP": 50, "Min": 3000},
+        "FW": {"Gls": 20, "Ast": 15, "Succ": 40, "KP": 40, "Min": 3000}
+    }
+
+    league_weights = {
+        "eng Premier League": 1.00,
+        "es La Liga": 0.98,
+        "de Bundesliga": 0.96,
+        "it Serie A": 0.95,
+        "fr Ligue 1": 0.93
+    }
+
+    ysp_score = 0
+    if "GK" in position:
+        bm = benchmarks["GK"]
+        ysp_score = (
+            (minutes / bm["Min"]) * 40 +
+            (clearances / bm["Clr"]) * 20 +
+            (tackles / bm["Tkl"]) * 20 +
+            (blocks / bm["Blocks"]) * 20
+        )
+    elif "DF" in position:
+        bm = benchmarks["DF"]
+        ysp_score = (
+            (tackles / bm["Tkl"]) * 18 +
+            (interceptions / bm["Int"]) * 18 +
+            (clearances / bm["Clr"]) * 18 +
+            (blocks / bm["Blocks"]) * 10 +
+            (minutes / bm["Min"]) * 10 +
+            (goals / bm["Gls"]) * 13 +
+            (assists / bm["Ast"]) * 13
+        )
+    elif "MF" in position:
+        bm = benchmarks["MF"]
+        ysp_score = (
+            (goals / bm["Gls"]) * 20 +
+            (assists / bm["Ast"]) * 20 +
+            (dribbles / bm["Succ"]) * 20 +
+            (key_passes / bm["KP"]) * 20 +
+            (minutes / bm["Min"]) * 20
+        )
+    elif "FW" in position:
+        bm = benchmarks["FW"]
+        ysp_score = (
+            (goals / bm["Gls"]) * 30 +
+            (assists / bm["Ast"]) * 25 +
+            (dribbles / bm["Succ"]) * 15 +
+            (key_passes / bm["KP"]) * 15 +
+            (minutes / bm["Min"]) * 15
+        )
+    else:
+        ysp_score = (goals * 3 + assists * 2 + minutes / 250)
+
+    if minutes > 0:
+        contribution_per_90 = ((goals + assists + dribbles * 0.5 + key_passes * 0.5) / minutes) * 90
+        if contribution_per_90 >= 1.2:
+            ysp_score += 15
+        elif contribution_per_90 >= 0.9:
+            ysp_score += 10
+        elif contribution_per_90 >= 0.6:
+            ysp_score += 5
+
+    if age <= 20:
+        ysp_score *= 1.1
+    elif age <= 23:
+        ysp_score *= 1.05
+
+    league_weight = league_weights.get(league.strip(), 0.9)
+    ysp_score *= league_weight
+    return min(round(ysp_score, 2), 100)
+
+def calculate_fit_score(player_row, club_row, manual_market_value=None):
     score = 0
     weights = {
         "style": 0.20,
@@ -40,7 +123,8 @@ def calculate_fit_score(player_row, club_row, use_market_value=False):
         "pass_match": 0.10,
         "formation_role": 0.15,
         "age_dynamics": 0.05,
-        "personal_style": 0.10
+        "personal_style": 0.05,
+        "roi_factor": 0.05
     }
 
     position = str(player_row["Pos"])
@@ -52,13 +136,23 @@ def calculate_fit_score(player_row, club_row, use_market_value=False):
     xg = player_row.get("xG", 0)
     xag = player_row.get("xAG", 0)
     age = player_row["Age"]
+    market_value = player_row.get("MarketValue", 0)
+    future_value = player_row.get("FutureValue", 0)
 
-    formation = club_row["Common Formation"]
-    style = club_row["Playing Style"]
-    press = club_row["Pressing Style"]
-    def_line = club_row["Defensive Line Depth"]
-    pass_acc = club_row["Pass Accuracy (%)"]
-    team_xg = club_row["Team xG per Match"]
+    if club_row is not None:
+        formation = club_row["Common Formation"]
+        style = club_row["Playing Style"]
+        press = club_row["Pressing Style"]
+        def_line = club_row["Defensive Line Depth"]
+        pass_acc = club_row["Pass Accuracy (%)"]
+        team_xg = club_row["Team xG per Match"]
+    else:
+        formation = ""
+        style = ""
+        press = ""
+        def_line = ""
+        pass_acc = 0
+        team_xg = 0
 
     style_score = 50
     if "Attacking" in style and "FW" in position:
@@ -131,6 +225,47 @@ def calculate_fit_score(player_row, club_row, use_market_value=False):
         personal_score = 60
     score += personal_score * weights["personal_style"]
 
-    # שווי שוק לא נכלל במדד התאמה (use_market_value = False), אז מתעלמים ממנו כאן
+    roi_score = 50
+    try:
+        base_value = manual_market_value if manual_market_value is not None else market_value
+        if base_value > 0 and future_value > 0:
+            roi = (future_value - base_value) / base_value
+            if roi >= 1.0:
+                roi_score = 100
+            elif roi >= 0.5:
+                roi_score = 80
+            elif roi >= 0.2:
+                roi_score = 65
+        score += roi_score * weights["roi_factor"]
+    except:
+        pass
 
     return round(min(score, 100), 2)
+
+def calculate_weighted_ysp(player_row, manual_market_value=None):
+    ysp_gross = calculate_ysp_score(player_row)
+
+    market_value = manual_market_value if manual_market_value is not None else player_row.get("MarketValue", 0)
+
+    max_market_value = 220_000_000  # 220 מיליון אירו
+
+    if market_value > max_market_value:
+        market_value = max_market_value
+
+    market_value_score = market_value / max_market_value if max_market_value > 0 else 0
+
+    gross_weight = 0.7
+    market_weight = 0.3
+
+    weighted_score = ysp_gross * gross_weight + market_value_score * 100 * market_weight
+
+    if ysp_gross == 100:
+        weighted_score = 100
+
+    return round(weighted_score, 2)
+
+def get_transfermarkt_link(player_name):
+    import urllib.parse
+    base_url = "https://duckduckgo.com/?q="
+    query = urllib.parse.quote(f"{player_name} site:transfermarkt.com")
+    return base_url + query
