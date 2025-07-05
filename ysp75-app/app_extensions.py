@@ -311,7 +311,7 @@ def run_advanced_search_tab():
     ]
 
     st.subheader(f"נמצאו {len(filtered_df)} שחקנים מתאימים")
-    for _, row in filtered_df.iterrows():
+    for idx, row in filtered_df.iterrows():
         st.markdown(f"### {row['Player']} ({row['Age']}), {row['Pos']} - {row['Comp']}")
         ysp = calculate_ysp_score(row)
         st.write(f"🔢 מדד YSP: {ysp}")
@@ -320,13 +320,13 @@ def run_advanced_search_tab():
         link = generate_transfermarkt_link(row["Player"])
         st.markdown(f"[🔗 עמוד Transfermarkt]({link})")
 
-        # שווי שוק ו־ROI
+        # שווי שוק ו־ROI — key ייחודי!
         market_value = st.number_input(
             f"💶 הזן שווי שוק נוכחי ב-מיליון אירו עבור {row['Player']}",
             min_value=0.0,
             step=0.1,
             format="%.2f",
-            key=f"mv_{row['Player']}"
+            key=f"mv_{row['Player']}_{idx}"
         )
         if market_value > 0:
             predicted = (ysp / 100) * 80 + 20
@@ -334,4 +334,3 @@ def run_advanced_search_tab():
             st.write(f"💡 {roi_label} (YSP: {ysp}, שווי נוכחי: {market_value}M)")
 
         st.markdown("---")
-
