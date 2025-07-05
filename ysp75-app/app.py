@@ -119,9 +119,11 @@ def run_player_search():
 
     st.caption("הנתונים מבוססים על ניתוח אלגוריתמי לצרכים חינוכיים ואנליטיים בלבד.")
 
-mode = st.sidebar.radio("בחר מצב:", ("חיפוש שחקנים", "היסטוריית חיפושים"))
+mode = st.sidebar.radio("בחר מצב:", ("חיפוש שחקנים", "חיפוש מתקדם", "היסטוריית חיפושים"))
 
 if mode == "חיפוש שחקנים":
     run_player_search()
+elif mode == "חיפוש מתקדם":
+    app_extensions.run_advanced_search_tab()
 elif mode == "היסטוריית חיפושים":
     show_search_history()
