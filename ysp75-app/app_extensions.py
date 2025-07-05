@@ -1,57 +1,28 @@
 import streamlit as st
-import requests
-from urllib.parse import quote_plus
+import urllib.parse
 
-def market_value_section(player_name: str) -> float | None:
+def generate_transfermarkt_link(player_name):
+    query = f"site:transfermarkt.com {player_name}"
+    encoded_query = urllib.parse.quote(query)
+    search_url = f"https://duckduckgo.com/?q={encoded_query}"
+    return search_url
+
+def market_value_section(player_name):
     st.markdown("---")
-    st.subheader("הזן שווי שוק ידני לשחקן (בשקלים או במיליוני אירו)")
+    st.subheader(f"הזן שווי שוק ידני לשחקן {player_name} (במיליוני אירו, לדוגמה: 90 = 90M EUR)")
 
     manual_value = st.number_input(
-        label=f"שווי שוק לשחקן {player_name} (אם 90 או יותר, נחשב במיליוני אירו)",
+        label="שווי שוק (מיליוני אירו)",
         min_value=0.0,
-        step=100000.0,
+        step=1.0,
         format="%.2f",
-        help="הזן שווי שוק ידני או השאר 0 לשימוש בשווי מהמאגר.",
+        help="אם לא תזין ערך, ישתמש בשווי מהמאגר.",
         key=f"manual_value_{player_name}"
     )
-    if manual_value >= 90:  # המרה לאירו (מיליונים)
-        manual_value = manual_value * 1_000_000 * 4  # נניח 1 אירו=4 ש"ח
-    elif manual_value == 0.0:
+    if manual_value == 0.0:
         return None
-    return manual_value
-
-def search_transfermarkt(player_name: str) -> str | None:
-    """חיפוש אוטומטי של קישור Transfermarkt לשחקן עם fallback ל-DuckDuckGo."""
-    query = quote_plus(f"{player_name} site:transfermarkt.com")
-    google_url = f"https://www.google.com/search?q={query}"
-    headers = {"User-Agent": "Mozilla/5.0"}
-
-    try:
-        resp = requests.get(google_url, headers=headers, timeout=5)
-        if resp.status_code == 200:
-            text = resp.text
-            # חיפוש קישורי TM מהתוצאה
-            import re
-            links = re.findall(r'href="(https://www.transfermarkt.com/[^"]+)"', text)
-            if links:
-                return links[0]
-    except Exception:
-        pass
-
-    # fallback ל-DuckDuckGo
-    ddg_url = f"https://duckduckgo.com/html/?q={query}"
-    try:
-        resp = requests.get(ddg_url, headers=headers, timeout=5)
-        if resp.status_code == 200:
-            text = resp.text
-            import re
-            links = re.findall(r'href="(https://www.transfermarkt.com/[^"]+)"', text)
-            if links:
-                return links[0]
-    except Exception:
-        pass
-
-    return None
+    else:
+        return manual_value * 1_000_000  # המרה למיליוני אירו
 
 def calculate_fit_score(player_row, club_row, manual_market_value=None):
     score = 0
