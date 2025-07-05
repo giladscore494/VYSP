@@ -2,7 +2,7 @@ import streamlit as st
 import os
 import pandas as pd
 from search_history import save_search, show_search_history
-import app_extensions  # נניח שקובץ ההרחבה נקרא כך
+import app_extensions  # ייבוא קוד ההרחבה
 
 # הגדרת עמוד
 st.set_page_config(page_title="FstarVfootball", layout="wide")
@@ -30,9 +30,6 @@ def match_text(query, text):
     return query.lower() in str(text).lower()
 
 def calculate_ysp_score(row):
-    # ניתן להשאיר כמו שהיה או להוסיף כאן לפי הצורך
-    # לדוגמה:
-    # החישוב הנוכחי ללא שינוי
     position = str(row["Pos"])
     minutes = row["Min"]
     goals = row["Gls"]
@@ -137,24 +134,21 @@ def run_player_search():
 
         row = df[df["Player"] == selected_player].iloc[0]
 
-        # הצגת שדה להזנת שווי שוק ידני + כפתור אישור
+        # הזנת שווי שוק ידני לפני חישוב המדד
         manual_value = app_extensions.market_value_section(selected_player)
 
         # הצגת קישור ל-Transfermarkt
-        app_extensions.display_transfermarkt_link(selected_player)
+        tm_link = app_extensions.search_transfermarkt(selected_player)
+        if tm_link:
+            st.markdown(f"[קישור לטרנספרמרקט של {selected_player}]({tm_link})")
+        else:
+            st.info("לא נמצא קישור אוטומטי לעמוד הטרנספרמרקט של השחקן.")
 
-        # חישוב מדד YSP-75
         ysp_score = calculate_ysp_score(row)
         st.metric("מדד YSP-75", ysp_score)
 
-        # חישוב fit_score רק לאחר אישור שווי שוק (manual_value != None)
-        fit_score = None
-        if manual_value is not None:
-            fit_score = app_extensions.calculate_fit_score(row, None, manual_market_value=manual_value)
-        else:
-            fit_score = app_extensions.calculate_fit_score(row, None)
-
-        st.metric("מדד התאמה (Fit Score)", f"{fit_score:.2f}" if fit_score is not None else "לא זמין")
+        fit_score = app_extensions.calculate_fit_score(row, None, manual_market_value=manual_value)
+        st.metric("מדד התאמה (Fit Score)", fit_score)
 
         # שמירת החיפוש עם הציון
         save_search(selected_player, ysp_score)
@@ -172,11 +166,11 @@ def run_player_search():
             club_data = clubs_df[clubs_df["Club"] == selected_club]
             if not club_data.empty:
                 club_row = club_data.iloc[0]
-                fit_score_club = app_extensions.calculate_fit_score(row, club_row, manual_market_value=manual_value)
-                st.metric("רמת התאמה חזויה לקבוצה", f"{fit_score_club}%")
-                if fit_score_club >= 85:
+                fit_score = app_extensions.calculate_fit_score(player_row=row, club_row=club_row, manual_market_value=manual_value)
+                st.metric("רמת התאמה חזויה לקבוצה", f"{fit_score}%")
+                if fit_score >= 85:
                     st.success("התאמה מצוינת – סביר שיצליח במערכת הזו.")
-                elif fit_score_club >= 70:
+                elif fit_score >= 70:
                     st.info("התאמה סבירה – עשוי להסתגל היטב.")
                 else:
                     st.warning("התאמה נמוכה – דרושה התאמה טקטית או סבלנות.")
@@ -188,7 +182,7 @@ def run_player_search():
         st.subheader("📊 10 המועדונים המתאימים ביותר לשחקן")
         scores = []
         for i, club_row in clubs_df.iterrows():
-            score = app_extensions.calculate_fit_score(row, club_row, manual_market_value=manual_value)
+            score = app_extensions.calculate_fit_score(player_row=row, club_row=club_row, manual_market_value=manual_value)
             scores.append((club_row["Club"], score))
         scores.sort(key=lambda x: x[1], reverse=True)
         top_scores = scores[:10]
