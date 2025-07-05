@@ -279,80 +279,33 @@ def run_advanced_search_tab():
 
     filtered_df = df[df["Pos"] == pos_filter]
 
-    # סינון מתקדם לפי נתונים מתאימים לעמדה
+    # סינון מתקדם לפי נתונים מתאימים לעמדה - תמיד טווח קבוע!
     if "GK" in pos_filter:
-        possible_clr = [v for v in sorted(df["Clr"].unique()) if 0 <= v <= 100]
-        if possible_clr:
-            clr_range = st.select_slider(
-                "ניקויים (Clearances) - בחר טווח",
-                options=possible_clr,
-                value=(min(possible_clr), max(possible_clr))
-            )
-            filtered_df = filtered_df[
-                (filtered_df["Clr"] >= clr_range[0]) & (filtered_df["Clr"] <= clr_range[1])
-            ]
-
+        clr_range = st.slider("ניקויים (Clearances)", 0, 100, (0, 100))
+        filtered_df = filtered_df[
+            (filtered_df["Clr"] >= clr_range[0]) & (filtered_df["Clr"] <= clr_range[1])
+        ]
     elif "DF" in pos_filter:
-        possible_tkl = [v for v in sorted(df["Tkl"].unique()) if 0 <= v <= 100]
-        possible_blocks = [v for v in sorted(df["Blocks"].unique()) if 0 <= v <= 50]
-        if possible_tkl:
-            tkl_range = st.select_slider(
-                "תיקולים - בחר טווח",
-                options=possible_tkl,
-                value=(min(possible_tkl), max(possible_tkl))
-            )
-            filtered_df = filtered_df[
-                (filtered_df["Tkl"] >= tkl_range[0]) & (filtered_df["Tkl"] <= tkl_range[1])
-            ]
-        if possible_blocks:
-            blocks_range = st.select_slider(
-                "חסימות - בחר טווח",
-                options=possible_blocks,
-                value=(min(possible_blocks), max(possible_blocks))
-            )
-            filtered_df = filtered_df[
-                (filtered_df["Blocks"] >= blocks_range[0]) & (filtered_df["Blocks"] <= blocks_range[1])
-            ]
-
+        tkl_range = st.slider("תיקולים", 0, 100, (0, 100))
+        blocks_range = st.slider("חסימות", 0, 50, (0, 50))
+        filtered_df = filtered_df[
+            (filtered_df["Tkl"] >= tkl_range[0]) & (filtered_df["Tkl"] <= tkl_range[1]) &
+            (filtered_df["Blocks"] >= blocks_range[0]) & (filtered_df["Blocks"] <= blocks_range[1])
+        ]
     elif "MF" in pos_filter or "FW" in pos_filter:
-        possible_kp = [v for v in sorted(df["KP"].unique()) if 0 <= v <= 100]
-        possible_dribbles = [v for v in sorted(df["Succ"].unique()) if 0 <= v <= 100]
-        if possible_kp:
-            kp_range = st.select_slider(
-                "מסירות מפתח - בחר טווח",
-                options=possible_kp,
-                value=(min(possible_kp), max(possible_kp))
-            )
-            filtered_df = filtered_df[
-                (filtered_df["KP"] >= kp_range[0]) & (filtered_df["KP"] <= kp_range[1])
-            ]
-        if possible_dribbles:
-            dribbles_range = st.select_slider(
-                "דריבלים מוצלחים - בחר טווח",
-                options=possible_dribbles,
-                value=(min(possible_dribbles), max(possible_dribbles))
-            )
-            filtered_df = filtered_df[
-                (filtered_df["Succ"] >= dribbles_range[0]) & (filtered_df["Succ"] <= dribbles_range[1])
-            ]
+        kp_range = st.slider("מסירות מפתח", 0, 100, (0, 100))
+        dribbles_range = st.slider("דריבלים מוצלחים", 0, 100, (0, 100))
+        filtered_df = filtered_df[
+            (filtered_df["KP"] >= kp_range[0]) & (filtered_df["KP"] <= kp_range[1]) &
+            (filtered_df["Succ"] >= dribbles_range[0]) & (filtered_df["Succ"] <= dribbles_range[1])
+        ]
 
     # סינון נוסף לפי גיל ו־xG צפוי עם טווחים קבועים מראש
-    min_age = st.slider("גיל מינימלי", 15, 30, 17)
-    max_age = st.slider("גיל מקסימלי", 18, 30, 24)
-
-    possible_xg = [round(v, 2) for v in sorted(set(df["xG"].dropna())) if 0.0 <= v <= 1.5]
-    if possible_xg:
-        xg_range = st.select_slider(
-            "xG צפוי - בחר טווח",
-            options=possible_xg,
-            value=(min(possible_xg), max(possible_xg))
-        )
-    else:
-        xg_range = (0.0, 1.5)
-
+    age_range = st.slider("טווח גילאים", 15, 30, (17, 24))
+    xg_range = st.slider("xG צפוי", 0.0, 1.5, (0.0, 1.5), step=0.01)
     filtered_df = filtered_df[
-        (filtered_df["Age"] >= min_age) &
-        (filtered_df["Age"] <= max_age) &
+        (filtered_df["Age"] >= age_range[0]) & 
+        (filtered_df["Age"] <= age_range[1]) &
         (filtered_df["xG"] >= xg_range[0]) & (filtered_df["xG"] <= xg_range[1])
     ]
 
@@ -367,10 +320,10 @@ def run_advanced_search_tab():
         st.markdown(f"[🔗 עמוד Transfermarkt]({link})")
 
         # שווי שוק ו־ROI
-        market_value = st.number_input(f"💶 הזן שווי שוק נוכחי ב-מיליון אירו עבור {row['Player']}", min_value=0.0, step=0.1, format="%.2f", key=f"mv_{row['Player']}")
+        market_value = st.number_input(f"💶 הזן שווי שוק נוכחי ב-מיליון אירו עבור {row['Player']}", min_value=0.0, step=0.1, format=\"%.2f\", key=f\"mv_{row['Player']}\")
         if market_value > 0:
             predicted = (ysp / 100) * 80 + 20
-            roi_label = "פוטנציאל רווח משמעותי" if predicted > market_value else "פוטנציאל רווח מתון או חסר"
-            st.write(f"💡 {roi_label} (YSP: {ysp}, שווי נוכחי: {market_value}M)")
+            roi_label = \"פוטנציאל רווח משמעותי\" if predicted > market_value else \"פוטנציאל רווח מתון או חסר\"
+            st.write(f\"💡 {roi_label} (YSP: {ysp}, שווי נוכחי: {market_value}M)\")
 
-        st.markdown("---")
+        st.markdown(\"---\")
