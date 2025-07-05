@@ -1,12 +1,22 @@
 import streamlit as st
 import os
 import pandas as pd
-from app_extensions import run_advanced_search_tab_embed  # ייבוא הפונקציה
+import app_extensions  # קובץ ההרחבה
 from search_history import save_search, show_search_history
-import app_extensions  # אם יש לך עוד פונקציות משם
+
+# קביעת page config וכו'
+st.set_page_config(page_title="FstarVfootball", layout="wide")
+
+# ... טעינת CSS ...
+
 mode = st.sidebar.radio("בחר מצב:", ("חיפוש שחקנים", "היסטוריית חיפושים", "חיפוש מתקדם"))
 
-# ... כאן שאר הייבוא והגדרות שלך ...
+if mode == "חיפוש שחקנים":
+    app_extensions.run_player_search()
+elif mode == "היסטוריית חיפושים":
+    show_search_history()
+elif mode == "חיפוש מתקדם":
+    st.info("🔗 החיפוש המתקדם רץ באתר נפרד. לחץ [כאן](https://fstarv-search-7ctjt8skkag7jd9aq6vicm.streamlit.app/) כדי לפתוח בחלון חדש.")
 
 
 # הגדרת עמוד
