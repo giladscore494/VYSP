@@ -424,7 +424,7 @@ a, button, label[for] { touch-action: manipulation; }
   cursor: pointer;
   touch-action: manipulation;
 }
-.mv:disabled { color: #9a9a9a; text-decoration: none; cursor: default; }
+.mv:disabled { color: var(--quiet); text-decoration: none; cursor: default; }
 .mv:not(:disabled):hover, .del:not(.is-armed):hover { text-decoration-thickness: 2px; }
 .del.is-armed {
   background: var(--ink);
