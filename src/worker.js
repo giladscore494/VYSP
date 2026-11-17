@@ -531,7 +531,7 @@ async function renderHome(request, env) {
 }
 
 // Bump when the HTML template changes, so browsers drop their cached copy.
-const HOME_VERSION = "6";
+const HOME_VERSION = "7";
 
 function telHref(phone) {
   let d = phone.replace(/[^\d+]/g, "");
@@ -568,18 +568,23 @@ function homeHtml(site) {
     const w2000 = variantWidth(p, 2000);
     const lead = i === 0;
     const alt = p.caption || `${name}, תמונה ${i + 1} מתוך ${total}`;
+    // Match the grid in site.css, including the plates that close the last row.
+    const last = i === total - 1;
+    const lone2 = last && i % 2 === 1;                                   // 2 columns: lone last tile spans the row
+    const lone3 = last && i % 3 === 1;                                   // 3 columns: lone last tile spans the row
+    const pair3 = (i === total - 2 && i % 3 === 1) || (last && i % 3 === 2); // 3 columns: trailing pair, half width each
     const sizes = lead
       ? "100vw"
-      : "(min-width: 1280px) 33vw, (min-width: 720px) 50vw, 100vw";
+      : `(min-width: 1280px) ${lone3 ? "100vw" : pair3 ? "50vw" : "33vw"}, (min-width: 720px) ${lone2 ? "100vw" : "50vw"}, 100vw`;
     return `<li class="item${lead ? " item--lead" : ""}">
 <a class="frame" href="${imgSrc(p, "w2000")}" data-index="${i}" data-w="${w2000}" data-h="${Math.round(w2000 * p.h / p.w)}" aria-label="פתיחת תמונה ${i + 1} מתוך ${total} בתצוגה מלאה">
 <img src="${imgSrc(p, "w800")}" srcset="${imgSrc(p, "w800")} ${w800}w, ${imgSrc(p, "w2000")} ${w2000}w" sizes="${sizes}" width="${p.w}" height="${p.h}" alt="${esc(alt)}" ${lead ? 'fetchpriority="high" loading="eager"' : 'loading="lazy"'} decoding="async">
-</a>${p.caption ? `\n<p class="caption">${esc(p.caption)}</p>` : ""}
+</a>${p.caption ? `\n<p class="caption">${esc(p.caption)}</p>` : lead ? "" : `\n<p class="caption" aria-hidden="true"></p>`}
 </li>`;
   }).join("\n");
 
   const gallery = total
-    ? `<ul class="gallery" role="list">\n${items}\n</ul>`
+    ? `<ul class="gallery${site.photos.some((p, i) => i > 0 && p.caption) ? "" : " gallery--bare"}" role="list">\n${items}\n</ul>`
     : `<p class="empty">התמונות יעלו בקרוב.</p>`;
 
   const contactLinks = [];
@@ -598,7 +603,7 @@ ${whatsapp ? `<div><dt>וואטסאפ</dt><dd><a href="${esc(waHref(whatsapp))}"
 
   const footer = hasContact
     ? `<footer class="contact" id="contact">
-<h2 class="contact-title">יצירת קשר</h2>
+<h2 class="vh">יצירת קשר</h2>
 <dl class="contact-list">
 ${contactEntries}
 </dl>

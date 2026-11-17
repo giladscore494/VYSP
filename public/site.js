@@ -8,7 +8,16 @@
 
   function markLoaded(img) { img.classList.add("is-loaded"); }
 
+  // The lead photograph on phones fills the screen below the masthead; measure the masthead.
+  function measureMasthead() {
+    const m = document.querySelector(".masthead");
+    if (m) document.documentElement.style.setProperty("--mast", Math.ceil(m.getBoundingClientRect().height) + "px");
+  }
+
   function init() {
+    measureMasthead();
+    window.addEventListener("resize", measureMasthead, { passive: true });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(measureMasthead);
     const frames = Array.from(document.querySelectorAll(".frame"));
 
     frames.forEach(function (frame) {

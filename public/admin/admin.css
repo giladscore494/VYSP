@@ -242,7 +242,7 @@ a, button, label[for] { touch-action: manipulation; }
 .drop { position: relative; }
 .drop-hint { margin: 12px 0 0; font-size: 13px; line-height: 1.6; }
 .only-fine { display: none; }
-@media (hover: hover) and (pointer: fine) { .only-fine { display: inline; } }
+@media (hover: hover) and (pointer: fine) and (min-width: 720px) { .only-fine { display: inline; } }
 
 .drop.is-over::after {
   content: "שחררו כאן כדי להעלות";
@@ -300,7 +300,7 @@ a, button, label[for] { touch-action: manipulation; }
 }
 .up.is-error .up-bar { display: none; }
 .up.is-error .up-state { color: var(--ink); font-weight: 600; }
-.up-msg { grid-column: 1 / -1; margin: 0; font-size: 14px; font-weight: 600; }
+.up-msg { grid-column: 1 / -1; margin: 4px 0 0; }
 .up-actions { grid-column: 1 / -1; display: flex; gap: 8px; }
 .up-actions .btn { min-height: 40px; padding: 0 14px; font-size: 13px; }
 
