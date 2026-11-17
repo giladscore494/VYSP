@@ -133,6 +133,7 @@
 | "יותר מדי ניסיונות כושלים" | אחרי 5 ניסיונות שגויים הכניסה נחסמת ל-15 דקות מאותה כתובת. מחכים ומנסים שוב. |
 | "פג תוקף ההתחברות" | עברו 30 יום או שקוד הגישה הוחלף. מתחברים שוב. |
 | הבנייה ב-Cloudflare נכשלת עם שגיאה על R2 או על <span dir="ltr">bucket</span> | בודקים שהדלי קיים ושהשם שלו בדיוק <span dir="ltr">`zimmer-gallery-photos`</span> (שלב 1). אחר כך ב-<span dir="ltr">Workers & Pages</span> ← <span dir="ltr">zimmer-gallery</span> ← <span dir="ltr">Deployments</span> (או <span dir="ltr">Builds</span>) לוחצים על הבנייה האחרונה ← <span dir="ltr">Retry build</span>. |
+| הבנייה נכשלת עם <span dir="ltr">Could not detect a directory containing static files</span>, ומעליה <span dir="ltr">No dependencies detected</span> | הבנייה רצה על ענף או גרסה שאין בהם את קובצי האתר. ב-<span dir="ltr">Workers & Pages</span> ← <span dir="ltr">zimmer-gallery</span> ← <span dir="ltr">Settings</span> ← <span dir="ltr">Build</span> בודקים ש-<span dir="ltr">Production branch</span> (תחת <span dir="ltr">Branch control</span>) הוא <span dir="ltr">`main`</span>, וש-<span dir="ltr">Path</span>/<span dir="ltr">Root directory</span> ריק או <span dir="ltr">`/`</span>. אחר כך מפעילים בנייה חדשה (מיזוג של שינוי ל-<span dir="ltr">`main`</span> מפעיל אותה לבד). כפתור <span dir="ltr">Retry</span> על בנייה ישנה בונה שוב את אותה גרסה ישנה. |
 | רוצים לראות שגיאות מהשרת | <span dir="ltr">Workers & Pages</span> ← <span dir="ltr">zimmer-gallery</span> ← <span dir="ltr">Observability</span> (או <span dir="ltr">Logs</span>). |
 
 ---
