@@ -616,7 +616,7 @@ function fail(job, message, canRetry = true) {
   job.el.querySelector(".up-msg")?.remove();
   job.el.querySelector(".up-actions")?.remove();
   const msg = document.createElement("p");
-  msg.className = "up-msg";
+  msg.className = "error up-msg";
   msg.textContent = message;
   const actions = document.createElement("div");
   actions.className = "up-actions";

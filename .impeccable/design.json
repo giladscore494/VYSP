@@ -1,0 +1,408 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-17T21:48:23+00:00",
+  "title": "Design System: Zimmer Gallery",
+  "extensions": {
+    "colorMeta": {
+      "ink": {
+        "role": "primary",
+        "displayName": "Ink Black",
+        "canonical": "#000",
+        "cssVar": "--ink (public also aliases it as --rule)",
+        "tonalRamp": [
+          "#000000",
+          "#141414",
+          "#262626",
+          "#3d3d3d",
+          "#5e5e5e",
+          "#858585",
+          "#adadad",
+          "#d6d6d6"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper White",
+        "canonical": "#fff",
+        "cssVar": "--paper",
+        "tonalRamp": [
+          "#262626",
+          "#3d3d3d",
+          "#5e5e5e",
+          "#858585",
+          "#adadad",
+          "#d6d6d6",
+          "#f1f1f1",
+          "#ffffff"
+        ]
+      },
+      "quiet": {
+        "role": "neutral",
+        "displayName": "Quiet Grey",
+        "canonical": "#5e5e5e",
+        "cssVar": "--quiet",
+        "tonalRamp": [
+          "#141414",
+          "#262626",
+          "#3d3d3d",
+          "#5e5e5e",
+          "#858585",
+          "#adadad",
+          "#d6d6d6",
+          "#f1f1f1"
+        ]
+      },
+      "hair": {
+        "role": "neutral",
+        "displayName": "Hairline Grey",
+        "canonical": "#f1f1f1",
+        "cssVar": "--hair",
+        "tonalRamp": [
+          "#141414",
+          "#262626",
+          "#3d3d3d",
+          "#5e5e5e",
+          "#858585",
+          "#adadad",
+          "#d6d6d6",
+          "#f1f1f1"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Divider Grey",
+        "canonical": "#d6d6d6",
+        "cssVar": "--line (admin only)",
+        "tonalRamp": [
+          "#141414",
+          "#262626",
+          "#3d3d3d",
+          "#5e5e5e",
+          "#858585",
+          "#adadad",
+          "#d6d6d6",
+          "#f1f1f1"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The zimmer's name in the masthead; the 404 heading. Bellefair's one moment."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Phone and WhatsApp numbers in the contact footer, lining tabular numerals, LTR."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Admin view headings."
+      },
+      "title-section": {
+        "displayName": "Title Section",
+        "purpose": "Admin block headings over a black rule."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Public page base text."
+      },
+      "body-admin": {
+        "displayName": "Body Admin",
+        "purpose": "Admin base text, prose capped at 60ch."
+      },
+      "small": {
+        "displayName": "Small",
+        "purpose": "Captions under photos and in the viewer, Quiet Grey."
+      },
+      "small-open": {
+        "displayName": "Small Open",
+        "purpose": "The subtitle, max 34ch."
+      },
+      "label-action": {
+        "displayName": "Label Action",
+        "purpose": "The two halves of the phone bar."
+      },
+      "label-word": {
+        "displayName": "Label Word",
+        "purpose": "Public word controls and the viewer counter (0.12 to 0.14em)."
+      },
+      "label-field": {
+        "displayName": "Label Field",
+        "purpose": "Admin form labels."
+      },
+      "button": {
+        "displayName": "Button",
+        "purpose": "Admin boxed buttons."
+      },
+      "input": {
+        "displayName": "Input",
+        "purpose": "Admin fields; 16px prevents iOS focus zoom."
+      }
+    },
+    "shadows": [],
+    "elevationNote": "No shadows. Depth is white covering white (viewer), a 1px black top rule (phone bar), or a 1px black outline (dragged admin row).",
+    "strokes": [
+      {
+        "name": "rule",
+        "value": "1px solid #000",
+        "purpose": "Structure: top bar, block heads, boxed buttons and fields, phone bar top, empty-gallery frame, error mark."
+      },
+      {
+        "name": "divider",
+        "value": "1px solid #d6d6d6",
+        "purpose": "Admin only: between repeated rows, resting caption-field border, desktop drop zone."
+      },
+      {
+        "name": "invalid",
+        "value": "outline: 2px solid #000",
+        "purpose": "Invalid admin field."
+      },
+      {
+        "name": "focus",
+        "value": "outline: 1px solid #000; outline-offset: 3px",
+        "purpose": "Default focus ring; inset (-4px to -6px) inside full-bleed controls, 0 on fields."
+      },
+      {
+        "name": "grip",
+        "value": "two 1.5px horizontal strokes, 18px wide, 7px apart",
+        "purpose": "The one drawn mark: the admin drag grip."
+      },
+      {
+        "name": "underline",
+        "value": "text-decoration-thickness: 1px; text-underline-offset: 0.3em",
+        "purpose": "Word links; 2px on hover for admin move/delete."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "The single easing for every transition except upload progress."
+      },
+      {
+        "name": "photo-fade",
+        "value": "opacity 400ms ease-out",
+        "purpose": "Photographs fade up from the Hairline Grey placeholder once loaded (only with JS)."
+      },
+      {
+        "name": "viewer-morph",
+        "value": "view-transition-group(photo) 420ms ease-out",
+        "purpose": "Tapped photo morphs into the full-screen viewer and back."
+      },
+      {
+        "name": "page-crossfade",
+        "value": "view-transition root 260ms",
+        "purpose": "Page crossfade around the viewer morph."
+      },
+      {
+        "name": "photo-hover",
+        "value": "opacity 0.86 over 200ms",
+        "purpose": "Hover on a photograph (hover-capable devices only)."
+      },
+      {
+        "name": "row-slide",
+        "value": "transform 220ms ease-out",
+        "purpose": "Admin rows slide aside while one is dragged."
+      },
+      {
+        "name": "upload-progress",
+        "value": "transform scaleX 200ms linear",
+        "purpose": "Upload progress line, filling from the right."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "prefers-reduced-motion: reduce",
+        "purpose": "Removes the photo fade, the morph, the row slide and the progress transition."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "md",
+        "value": "720px",
+        "purpose": "Two-column gallery, 40px gutter, contact words move to masthead, phone bar hidden; admin rows go single-line."
+      },
+      {
+        "name": "lg",
+        "value": "1280px",
+        "purpose": "Three-across gallery on a six-track grid, 56px gutter."
+      },
+      {
+        "name": "fine-pointer",
+        "value": "(hover: hover) and (pointer: fine) and (min-width: 720px)",
+        "purpose": "Admin drag-and-drop hint shown."
+      }
+    ],
+    "direction": {
+      "lang": "he",
+      "dir": "rtl",
+      "note": "Logical properties throughout; numbers, phone numbers, file names, the token field and the viewer counter are LTR islands."
+    },
+    "fonts": [
+      {
+        "family": "Assistant",
+        "source": "/fonts/assistant-{hebrew,latin}-wght-normal.woff2",
+        "weights": "200 800 (variable)",
+        "license": "OFL"
+      },
+      {
+        "family": "Bellefair",
+        "source": "/fonts/bellefair-{hebrew,latin}-400-normal.woff2",
+        "weights": "400",
+        "license": "OFL",
+        "scope": "public page only"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Phone Bar",
+      "kind": "custom",
+      "refersTo": "action-bar-solid",
+      "description": "Fixed bottom bar on phones: WhatsApp solid black, call plain white, words only.",
+      "html": "<div class=\"ds-bar\" dir=\"rtl\"><a class=\"ds-act ds-act--solid\" href=\"#\">וואטסאפ</a><a class=\"ds-act\" href=\"#\">חיוג</a></div>",
+      "css": ".ds-bar { display: flex; background: #fff; border-top: 1px solid #000; font-family: Assistant, 'Arial Hebrew', Arial, sans-serif; } .ds-act { flex: 1 1 0; display: flex; align-items: center; justify-content: center; min-height: 56px; font-size: 13px; font-weight: 600; letter-spacing: 0.1em; text-decoration: none; color: #000; background: #fff; } .ds-act--solid { background: #000; color: #fff; } .ds-act:focus-visible { outline: 1px solid currentColor; outline-offset: -4px; } .ds-act--solid:focus-visible { outline-color: #fff; }"
+    },
+    {
+      "name": "Word Control",
+      "kind": "nav",
+      "refersTo": "word-control",
+      "description": "Public text controls: tracked 600-weight words with a 1px rule beneath on hover.",
+      "html": "<nav class=\"ds-words\" dir=\"rtl\"><a href=\"#\">וואטסאפ</a><a href=\"#\">חיוג</a><button type=\"button\" disabled>הקודמת</button></nav>",
+      "css": ".ds-words { display: flex; gap: 28px; font-family: Assistant, 'Arial Hebrew', Arial, sans-serif; } .ds-words a, .ds-words button { font: inherit; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; color: #000; background: none; border: 0; border-radius: 0; padding: 4px 0; text-decoration: none; border-bottom: 1px solid transparent; cursor: pointer; } .ds-words a:hover, .ds-words button:not(:disabled):hover { border-bottom-color: #000; } .ds-words button:disabled { color: #5e5e5e; cursor: default; } .ds-words a:focus-visible, .ds-words button:focus-visible { outline: 1px solid #000; outline-offset: 3px; }"
+    },
+    {
+      "name": "Solid Button",
+      "kind": "button",
+      "refersTo": "button-solid",
+      "description": "Admin primary action; inverts on hover.",
+      "html": "<button class=\"ds-btn ds-btn--solid\" type=\"button\">הוספת תמונות</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 22px; font-family: Assistant, 'Arial Hebrew', Arial, sans-serif; font-size: 14px; font-weight: 600; letter-spacing: 0.1em; color: #000; background: #fff; border: 1px solid #000; border-radius: 0; cursor: pointer; } .ds-btn--solid { background: #000; color: #fff; } .ds-btn--solid:hover { background: #fff; color: #000; } .ds-btn:focus-visible { outline: 1px solid #000; outline-offset: 3px; }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Admin secondary action; inverts to solid on hover.",
+      "html": "<button class=\"ds-btn-o\" type=\"button\">בדיקה מחדש</button>",
+      "css": ".ds-btn-o { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 22px; font-family: Assistant, 'Arial Hebrew', Arial, sans-serif; font-size: 14px; font-weight: 600; letter-spacing: 0.1em; color: #000; background: #fff; border: 1px solid #000; border-radius: 0; cursor: pointer; } .ds-btn-o:hover { background: #000; color: #fff; } .ds-btn-o:focus-visible { outline: 1px solid #000; outline-offset: 3px; } .ds-btn-o:disabled { background: #f1f1f1; color: #5e5e5e; border-color: #d6d6d6; cursor: not-allowed; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Admin field with label: square, 1px black, 16px text, flush focus outline.",
+      "html": "<div class=\"ds-fieldset\" dir=\"rtl\"><label class=\"ds-label\" for=\"ds-f\">שם הצימר</label><input class=\"ds-field\" id=\"ds-f\" value=\"בית האלון\"></div>",
+      "css": ".ds-fieldset { font-family: Assistant, 'Arial Hebrew', Arial, sans-serif; max-width: 420px; } .ds-label { display: block; margin-bottom: 8px; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; color: #000; } .ds-field { display: block; width: 100%; min-height: 48px; padding: 10px 12px; font: inherit; font-size: 16px; color: #000; background: #fff; border: 1px solid #000; border-radius: 0; appearance: none; } .ds-field:focus-visible { outline: 1px solid #000; outline-offset: 0; } .ds-field[aria-invalid='true'] { outline: 2px solid #000; outline-offset: 0; }"
+    },
+    {
+      "name": "Error Line",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "Errors are black words with a black inline-start rule, prefixed by the word for error.",
+      "html": "<p class=\"ds-error\" dir=\"rtl\">קוד הגישה שגוי.</p>",
+      "css": ".ds-error { margin: 12px 0 0; padding: 10px 0; padding-inline-start: 12px; border-inline-start: 1px solid #000; font-family: Assistant, 'Arial Hebrew', Arial, sans-serif; font-size: 14px; font-weight: 600; color: #000; } .ds-error::before { content: 'שגיאה: '; }"
+    },
+    {
+      "name": "Photo Frame",
+      "kind": "card",
+      "refersTo": "photo-frame",
+      "description": "Public gallery tile: grey placeholder at true proportion, image fades up, quiet caption beneath.",
+      "html": "<figure class=\"ds-frame-wrap\" dir=\"rtl\"><a class=\"ds-frame\" href=\"#\"><span class=\"ds-frame-img\"></span></a><figcaption class=\"ds-caption\">החדר הגדול, בוקר</figcaption></figure>",
+      "css": ".ds-frame-wrap { margin: 0; width: 240px; font-family: Assistant, 'Arial Hebrew', Arial, sans-serif; } .ds-frame { display: block; background: #f1f1f1; cursor: zoom-in; } .ds-frame-img { display: block; aspect-ratio: 4 / 5; background: #f1f1f1; transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-frame:hover .ds-frame-img { opacity: 0.86; } .ds-frame:focus-visible { outline: 1px solid #000; outline-offset: 3px; } .ds-caption { margin: 10px 0 22px; font-size: 12px; line-height: 1.6; letter-spacing: 0.04em; color: #5e5e5e; }"
+    },
+    {
+      "name": "Viewer Chrome",
+      "kind": "custom",
+      "refersTo": "viewer",
+      "description": "Full-screen white viewer: quiet LTR counter, close, previous and next as words.",
+      "html": "<div class=\"ds-viewer\" dir=\"rtl\"><div class=\"ds-viewer-top\"><p class=\"ds-count\">3 / 24</p><button type=\"button\">סגירה</button></div><div class=\"ds-viewer-stage\"></div><div class=\"ds-viewer-nav\"><button type=\"button\">הקודמת</button><button type=\"button\">הבאה</button></div></div>",
+      "css": ".ds-viewer { display: grid; grid-template-rows: auto 1fr auto; height: 280px; background: #fff; color: #000; font-family: Assistant, 'Arial Hebrew', Arial, sans-serif; } .ds-viewer-top, .ds-viewer-nav { display: flex; align-items: center; justify-content: space-between; padding: 0 8px; } .ds-count { margin: 0; padding: 0 12px; font-size: 12px; letter-spacing: 0.12em; font-variant-numeric: tabular-nums; direction: ltr; } .ds-viewer-stage { background: #f1f1f1; margin: 0 20px; } .ds-viewer button { border: 0; border-radius: 0; background: none; color: inherit; font: inherit; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; min-height: 48px; min-width: 48px; padding: 0 12px; cursor: pointer; } .ds-viewer button:hover { text-decoration: underline; text-underline-offset: 0.35em; text-decoration-thickness: 1px; } .ds-viewer button:focus-visible { outline: 1px solid #000; outline-offset: -6px; }"
+    },
+    {
+      "name": "Photo Row",
+      "kind": "custom",
+      "refersTo": "position-tag",
+      "description": "Admin list row: drawn two-line grip, thumbnail with black position tag, caption field, move and delete words.",
+      "html": "<div class=\"ds-row\" dir=\"rtl\"><button class=\"ds-grip\" type=\"button\" aria-label=\"גרירה\"></button><span class=\"ds-thumb\"><span class=\"ds-pos\">1</span></span><input class=\"ds-cap\" placeholder=\"כיתוב, לא חובה…\"><span class=\"ds-acts\"><button type=\"button\">למעלה</button><button type=\"button\">למטה</button><button type=\"button\" class=\"ds-del\">מחיקה</button></span></div>",
+      "css": ".ds-row { display: grid; grid-template-columns: 44px 96px minmax(0, 1fr) auto; align-items: center; gap: 2px 12px; padding: 10px 0; background: #fff; border-top: 1px solid #d6d6d6; border-bottom: 1px solid #d6d6d6; font-family: Assistant, 'Arial Hebrew', Arial, sans-serif; } .ds-grip { display: grid; place-items: center; width: 44px; min-height: 96px; padding: 0; border: 0; border-radius: 0; background: none; color: #000; cursor: grab; } .ds-grip::before { content: ''; width: 18px; height: 7px; border-top: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; } .ds-grip:focus-visible { outline: 1px solid #000; outline-offset: -4px; } .ds-thumb { position: relative; width: 96px; height: 96px; background: #f1f1f1; } .ds-pos { position: absolute; inset-block-start: 0; inset-inline-start: 0; min-width: 22px; padding: 1px 5px; background: #000; color: #fff; font-size: 12px; font-weight: 600; text-align: center; font-variant-numeric: tabular-nums; } .ds-cap { min-height: 44px; padding: 8px 10px; font: inherit; font-size: 16px; border: 1px solid #d6d6d6; border-radius: 0; background: #fff; color: #000; } .ds-cap:hover, .ds-cap:focus-visible { border-color: #000; outline: none; } .ds-acts { display: flex; } .ds-acts button { min-height: 48px; padding: 0 10px; font: inherit; font-size: 13px; letter-spacing: 0.04em; color: #000; background: none; border: 0; border-radius: 0; text-decoration: underline; text-underline-offset: 0.3em; text-decoration-thickness: 1px; cursor: pointer; } .ds-acts button:hover { text-decoration-thickness: 2px; } .ds-acts button:focus-visible { outline: 1px solid #000; outline-offset: 3px; } .ds-acts .ds-del--armed { background: #000; color: #fff; text-decoration: none; font-weight: 600; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The House Lookbook",
+    "overview": "The public page presents one zimmer the way a high-end fashion house presents a collection: the place is the garment and the photographs are the lookbook. White paper, black ink, and photographs at full width do all the work; the interface is a few small, exactly tracked words and a single name set in a fine high-contrast display face. Density is low and deliberate. Empty white is part of the composition, never filler to be designed away.\n\nThe admin is the back room of the same house. It uses the identical black-and-white material as a precise work surface: one column, 1px rules, square boxes, words as controls. It refuses the generic dashboard (sidebar, cards, coloured status badges, icon buttons), and it keeps the public page's discipline while trading the display face for plain Assistant weight.\n\nEverything is Hebrew and right-to-left. Layout is written in logical properties, and numbers, phone numbers and file names sit in left-to-right islands inside the RTL flow.",
+    "keyCharacteristics": [
+      "Pure white ground, pure black ink, greys only as placeholder, secondary text, or divider; no accent colour anywhere.",
+      "Photographs lead: the first photograph fills the phone's first viewport edge to edge.",
+      "Small Assistant text (12 to 14px) with open tracking; Bellefair only for the name and the contact numbers.",
+      "Controls are words: underlined, ruled beneath, or boxed in 1px black, never icons.",
+      "Square edges, 1px rules, no shadows; depth comes from white covering white.",
+      "One motion: photographs fade up from grey, and a tapped photo morphs into the white viewer."
+    ],
+    "rules": [
+      {
+        "name": "The No-Accent Rule",
+        "body": "Nothing is coloured. WhatsApp is black, not green; success and error are words, not hues. If a new element seems to need a colour, it needs a word or a rule instead.",
+        "section": "colors"
+      },
+      {
+        "name": "The Grey Is Absence Rule",
+        "body": "Hairline Grey means \"a photograph will be here\" or \"unavailable\"; Quiet Grey means \"secondary\". Neither is ever used as a surface tint, a card fill, or decoration.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Display Moment Rule",
+        "body": "Bellefair sets the name and the contact numbers on the public page and nothing else. It never sets a control, a caption, or anything in the admin, which does not load it.",
+        "section": "typography"
+      },
+      {
+        "name": "The Small and Open Rule",
+        "body": "Interface text stays at 12 to 15px with positive tracking (0.04 to 0.14em); emphasis comes from weight 600 and tracking, never from size jumps. There is no text between the 15px body and the 22px admin title.",
+        "section": "typography"
+      },
+      {
+        "name": "The Photograph Leads Rule",
+        "body": "On a phone, the guest sees the place before reading anything beyond the name: the lead photograph meets the masthead and the phone bar with no gap.",
+        "section": "layout"
+      },
+      {
+        "name": "The Closed Row Rule",
+        "body": "A grid of photographs always ends square. Add a plate rather than leave a hole.",
+        "section": "layout"
+      },
+      {
+        "name": "The Flat Paper Rule",
+        "body": "No `box-shadow`, no blur, no glow, no translucent overlay. If something must sit above something else, it covers it in white or gets a 1px black line.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Square Edge Rule",
+        "body": "Radius is 0 everywhere. No pills, no rounded thumbnails, no soft fields.",
+        "section": "shapes"
+      },
+      {
+        "name": "The Hairline Rule",
+        "body": "Lines are 1px and black unless they divide repeated admin rows. A rule separates; it never decorates.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "**Do** let the first photograph meet the masthead and the phone bar edge to edge on phones.",
+      "**Do** set every control as a word: tracked, weight 600, underlined, ruled beneath, or boxed in 1px Ink.",
+      "**Do** keep every corner at 0px and every line at 1px.",
+      "**Do** show state with words and weight: \"שגיאה:\" with a black inline-start rule for errors, a brief Quiet Grey word for saves.",
+      "**Do** invert (Ink to Paper) for hover on boxed admin buttons, and add or thicken a 1px rule for hover on word controls.",
+      "**Do** write layout in logical properties (inline-start, inline-end) and wrap numbers, phone numbers and file names in left-to-right islands.",
+      "**Do** reserve a photograph's proportions with Hairline Grey before it loads, and fade it in over 400ms.",
+      "**Do** keep tap targets at 48px (44px for in-row words on phones) and fields at 16px text."
+    ],
+    "donts": [
+      "**Don't** introduce any colour beyond Ink, Paper and the three greys; not for WhatsApp, success, error or links.",
+      "**Don't** use shadows, blur, glows, gradients or translucent overlays.",
+      "**Don't** round any corner.",
+      "**Don't** use icons, pictograms or icon fonts. The admin's two-line drag grip is the one drawn mark, and it stays a drawn pair of strokes.",
+      "**Don't** set Bellefair on anything but the name and the contact numbers, and never in the admin.",
+      "**Don't** wrap content in cards, panels or coloured badges; separate with 1px rules and white space.",
+      "**Don't** animate anything beyond the photograph fade, the viewer morph, the row slide and the progress line."
+    ]
+  }
+}
