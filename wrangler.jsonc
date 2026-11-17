@@ -1,0 +1,35 @@
+{
+  // Configuration for the zimmer gallery Worker.
+  // Workers Builds runs `npx wrangler deploy` with this file on every push to main.
+  // Nothing in here needs editing for a normal deploy.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "zimmer-gallery",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-11-01",
+
+  // Static files (styles, scripts, fonts, the admin page).
+  // Paths that match no file here ("/", "/api/...", "/img/...") go to the Worker.
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "none"
+  },
+
+  // The one R2 bucket that holds every photo and site.json.
+  // If a bucket with this name does not exist yet, `wrangler deploy` creates it.
+  "r2_buckets": [
+    {
+      "binding": "BUCKET",
+      "bucket_name": "zimmer-gallery-photos"
+    }
+  ],
+
+  // Logs in the Cloudflare dashboard (Workers & Pages > zimmer-gallery > Logs).
+  "observability": {
+    "enabled": true
+  }
+
+  // ADMIN_TOKEN is a Secret set once in the Cloudflare dashboard.
+  // It is intentionally not listed here: deploys never touch it.
+}

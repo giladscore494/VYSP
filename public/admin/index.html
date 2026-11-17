@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#ffffff">
+<title>ניהול האתר</title>
+<link rel="preload" href="/fonts/assistant-hebrew-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/admin/admin.css">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<script type="module" src="/admin/admin.js"></script>
+</head>
+<body>
+<header class="top">
+  <p class="top-name" id="top-name">ניהול האתר</p>
+  <nav class="top-links" aria-label="ניווט">
+    <a href="/" target="_blank" rel="noopener">צפייה באתר</a>
+    <button type="button" class="link" id="logout" hidden>יציאה</button>
+  </nav>
+</header>
+
+<div class="view" id="view-loading">
+  <p class="quiet">טוען…</p>
+</div>
+
+<section class="view" id="view-unconfigured" hidden aria-labelledby="unconf-title">
+  <h1 class="title" id="unconf-title">קוד הגישה עדיין לא הוגדר</h1>
+  <p>האתר עובד, אבל הכניסה לניהול סגורה עד שמגדירים קוד גישה. עושים את זה פעם אחת בלבד, בלוח הבקרה של Cloudflare:</p>
+  <ol class="steps">
+    <li><span>נכנסים אל <span dir="ltr">dash.cloudflare.com</span> ובוחרים <b dir="ltr">Workers &amp; Pages</b>.</span></li>
+    <li><span>לוחצים על <b dir="ltr">zimmer-gallery</b>, ואז על הלשונית <b dir="ltr">Settings</b>.</span></li>
+    <li><span>באזור <b dir="ltr">Variables and Secrets</b> לוחצים <b dir="ltr">+ Add</b>.</span></li>
+    <li><span>בוחרים <b dir="ltr">Type: Secret</b>, בשם המשתנה כותבים <b dir="ltr">ADMIN_TOKEN</b>, ובערך מדביקים קוד ארוך שבחרתם.</span></li>
+    <li><span>לוחצים <b dir="ltr">Deploy</b>, מחכים כחצי דקה ומרעננים את הדף הזה.</span></li>
+  </ol>
+  <p class="quiet">ההוראות המלאות נמצאות בקובץ README שבמאגר הקוד.</p>
+  <p><button type="button" class="btn" id="recheck">בדיקה מחדש</button></p>
+</section>
+
+<section class="view" id="view-login" hidden aria-labelledby="login-title">
+  <h1 class="title" id="login-title">כניסה לניהול</h1>
+  <form id="login-form" class="login" novalidate>
+    <label class="label" for="token">קוד גישה</label>
+    <input class="field" id="token" name="token" type="password" autocomplete="current-password" autocapitalize="off" spellcheck="false" dir="ltr" required>
+    <p class="error" id="login-error" role="alert" hidden></p>
+    <button type="submit" class="btn btn--solid btn--wide" id="login-submit">כניסה</button>
+  </form>
+</section>
+
+<main class="view" id="view-admin" hidden>
+  <section class="block" aria-labelledby="photos-title">
+    <div class="block-head">
+      <h1 class="block-title" id="photos-title">תמונות</h1>
+      <p class="quiet" id="photo-count"></p>
+    </div>
+    <p class="error" id="photos-error" role="alert" hidden></p>
+
+    <div class="drop" id="drop">
+      <input type="file" id="file" class="vh" multiple accept="image/jpeg,image/png,image/webp">
+      <label for="file" class="btn btn--solid btn--wide" id="pick">הוספת תמונות</label>
+      <p class="drop-hint quiet">אפשר לבחור כמה תמונות יחד<span class="only-fine">, או לגרור אותן לכאן</span>. ‏JPEG,‏ PNG או WebP, עד 30MB לתמונה. התמונה המקורית נשמרת כמו שהיא.</p>
+    </div>
+
+    <ul class="queue" id="queue" aria-label="העלאות" role="list"></ul>
+
+    <p class="quiet empty" id="empty" hidden>עדיין אין תמונות. התמונה הראשונה ברשימה תופיע בגדול בראש האתר.</p>
+    <p class="quiet hint" id="order-hint" hidden>לשינוי הסדר: גוררים את הפסים שבצד התמונה, או משתמשים בכפתורי למעלה ולמטה. התמונה הראשונה מופיעה בגדול בראש האתר, ולכן כדאי שתהיה צילום לרוחב.</p>
+    <ol class="photos" id="photos" aria-label="התמונות באתר, לפי הסדר"></ol>
+  </section>
+
+  <section class="block" aria-labelledby="texts-title">
+    <div class="block-head">
+      <h2 class="block-title" id="texts-title">פרטי הצימר</h2>
+    </div>
+    <form id="texts-form" class="texts" novalidate>
+      <div class="row-field">
+        <label class="label" for="f-name">שם הצימר</label>
+        <input class="field" id="f-name" name="name" maxlength="60" required autocomplete="off">
+      </div>
+      <div class="row-field">
+        <label class="label" for="f-subtitle">שורת משנה <span class="quiet">(לא חובה)</span></label>
+        <input class="field" id="f-subtitle" name="subtitle" maxlength="140" autocomplete="off" placeholder="למשל: שתי בקתות עץ בגליל העליון…">
+      </div>
+      <div class="row-field">
+        <label class="label" for="f-phone">טלפון</label>
+        <input class="field" id="f-phone" name="phone" type="tel" inputmode="tel" maxlength="20" dir="ltr" autocomplete="off" placeholder="050-1234567">
+      </div>
+      <div class="row-field">
+        <label class="label" for="f-whatsapp">וואטסאפ</label>
+        <input class="field" id="f-whatsapp" name="whatsapp" type="tel" inputmode="tel" maxlength="20" dir="ltr" autocomplete="off" placeholder="050-1234567" aria-describedby="wa-hint">
+        <p class="quiet field-hint" id="wa-hint">אם משאירים ריק, כפתור הוואטסאפ ישתמש במספר הטלפון.</p>
+      </div>
+      <p class="error" id="texts-error" role="alert" hidden></p>
+      <div class="form-foot">
+        <button type="submit" class="btn btn--solid" id="texts-submit">שמירת הפרטים</button>
+        <p class="status" id="texts-status" role="status" aria-live="polite"></p>
+      </div>
+    </form>
+  </section>
+</main>
+
+<p class="vh" id="announce" aria-live="assertive"></p>
+<noscript><p class="view">כדי לנהל את האתר יש להפעיל JavaScript בדפדפן.</p></noscript>
+</body>
+</html>
